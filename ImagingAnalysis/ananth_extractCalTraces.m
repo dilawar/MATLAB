@@ -2,8 +2,8 @@
 % - Kambadur Ananthamurthy
 % Always feed in the pixel resolution before manually drawing rois. Search for "@!"
 
-addpath('/Users/ananth/Documents/MATLAB/imagingAnalysis_MATLAB')
-addpath('/Users/ananth/Documents/MATLAB/CustomFunctions_MATLAB')
+addpath('/Users/ananth/Documents/MATLAB/ImagingAnalysis')
+addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
 %Add JARs to the current dynamic class path
 javaaddpath /Users/ananth/Documents/MATLAB/java/ij.jar
