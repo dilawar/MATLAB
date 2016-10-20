@@ -9,7 +9,7 @@ addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
 %Operations
 saveData = 0;
-manualROI = 1;
+cropRefImage = 1;
 doFECAnalysis = 0;
 doMotionAnalysis = 0;
 playVideos = 0;
@@ -42,15 +42,31 @@ for mouse = 1:length(mice)
         dataset = [mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
         disp(['Working on ' dataset])
         
-        %Develop the reference image using the first image in Trial 1
-        raw = load([direc mouseName '/' dataset '/' dataset '_Trial1']);
-        referenceImage = raw.raw(:,:,:,1);
-        figure(2)
-        imagesc(referenceImage)
-        colormap(jet)
-        colorbar
-        title(['Reference Image for ' ...
-            'M' num2str(mice(mouse)) ' ST' num2str(sessionType) ' S' num2str(session)])
+        if cropRefImage == 1
+            %Load the reference image (first image in Trial 1)
+            raw = load([direc mouseName '/' dataset '/' dataset '_Trial1']);
+            referenceImage = raw.raw(:,:,:,1);
+            figure(2)
+            imagesc(referenceImage)
+            colormap(jet)
+            colorbar
+            title(['Reference Image for ' ...
+                'M' num2str(mice(mouse)) ' ST' num2str(sessionType) ' S' num2str(session)])
+            
+            %Crop image
+            rectCrop = [100 35 70 50]; %[xmin ymin width height]
+            croppedImage = imcrop(referenceImage,rectCrop);
+            figure(3)
+            imagesc(croppedImage)
+            colormap(jet)
+            colorbar
+            title(['Cropped Image for ' ...
+                'M' num2str(mice(mouse)) ' ST' num2str(sessionType) ' S' num2str(session)])
+        else
+            %Load Reference and Cropped Images
+            referenceImage = load();
+            croppedImage = load();
+        end
         
         if doFECAnalysis == 1
             disp('Performing FEC analysis ...')
