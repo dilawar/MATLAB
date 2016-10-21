@@ -14,13 +14,12 @@ addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 sortVideos = 1;
 playVideos = 0;
 
-singleVideo = 1; %Does the session have only one video or several?
+singleVideo = 0; %Does the session have only one video or several?
 
 %Dataset details
-%mice = [1 2 3 4 5];
-mice = 5;
+mice = [1 2 3 4 5];
 sessionType = 9;
-nSessions = 2;
+nSessions = 5;
 nTrials = 61;
 
 %Video details
@@ -30,8 +29,8 @@ samplingRate = 100; % in Frames Per Second (fps)
 trialDuration = 2; % in seconds
 nFrames = samplingRate*trialDuration; %per trial
 
-%startSession = nSessions; %single sessions
-startSession = 1;
+startSession = nSessions; %single sessions
+%startSession = 1;
 startTrial = 2; % The first trial is only a dummy
 
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
