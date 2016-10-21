@@ -1,16 +1,17 @@
 % PURPOSE - Analysis code for TEC behaviour including FEC and Motion
 % DEPENDENCIES - First sort all trials as .mat files using sortingVideos.m
 
-clear all
-close all
+%clear all
+%close all
 
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
 %Operations
 saveData = 0;
+plotHistogram = 0;
 
 %Dataset details
-mouseName = 'MouseM5';
+mouseName = 'M5';
 sessionType = 9;
 session = 5;
 
@@ -24,73 +25,105 @@ session = 5;
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 
-dataset = [mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
+dataset = ['Mouse' mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
 disp(['Working on ' dataset])
 
+fontSize = 12;
+
 %Load the reference image (first image in Trial 1)
-raw = load([direc mouseName '/' dataset '/' dataset '_Trial1']);
+raw = load([direc 'Mouse' mouseName '/' dataset '/' dataset '_Trial1']);
 %refImage = rgb2gray(raw.raw(:,:,:,1));
 refImage = rgb2gray(raw.raw(:,:,:,1));
-figure(2)
-subplot(1,2,1)
+figure(1)
+subplot(1,3,1)
 imagesc(refImage)
-colormap(hot)
-colorbar
-title(['Reference Image for ' ...
-    'M' num2str(mice(mouse)) ' ST' num2str(sessionType) ' S' num2str(session)])
+z = colorbar;
+ylabel(z,'Intensity (A.U.)', ...
+    'FontSize', fontSize,...
+    'FontWeight', 'bold')
+title(['Reference Image - ' mouseName, ...
+    ' ST' num2str(sessionType) ' S' num2str(session)], ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
 %Equalize histogram
 refImage_histeq = histeq(refImage);
-subplot(1,2,2)
+subplot(1,3,2)
 imagesc(refImage_histeq)
+z = colorbar;
+ylabel(z,'Intensity (A.U.)', ...
+    'FontSize', fontSize,...
+    'FontWeight', 'bold')
+title('Histogram Equalized', ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
+
+%Median filter
+refImage_medfilt = medfilt2(refImage_histeq,[5 5]);
+subplot(1,3,3)
+imagesc(refImage_medfilt)
 colormap(hot)
-colorbar
-title('Histogram Equalized')
+z = colorbar;
+ylabel(z,'Intensity (A.U.)', ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
+title('Median Filtered', ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
 
 %Crop image
 %rectCrop = [100 35 50 30]; %[xmin ymin width height]
-rectCrop = [125 55 50 30]; %[xmin ymin width height]
-croppedImage = imcrop(refImage_histeq,rectCrop);
-
-%Median filter
-croppedImage_medfilt = medfilt2(croppedImage,[5 5]);
-
-hist_crop = imhist(croppedImage);
-hist_crop_medfilt = imhist(croppedImage_medfilt);
-figure(3)
-subplot(1,2,1)
-plot(hist_crop)
-%axis([0 60 0 500])
-title(['Histogram of the Cropped Image for ' ...
-    'M' num2str(mice(mouse)) ' ST' num2str(sessionType) ' S' num2str(session)])
-xlabel('Value')
-ylabel('Counts')
-subplot(1,2,2)
-plot(hist_crop_medfilt)
-%axis([0 60 0 500])
-title('Median Filtered')
-xlabel('Value')
-ylabel('Counts')
+rectCrop = [120 55 50 30]; %[xmin ymin width height]
+croppedImage = imcrop(refImage_medfilt,rectCrop);
 
 %Binarize
-croppedImage_binary = im2bw(croppedImage_medfilt,0.5);
-%croppedImage_binary = imbinarize(croppedImage_medfilt);
+croppedImage_binary = im2bw(croppedImage,0.49);
+%croppedImage_binary = imbinarize(croppedImage);
 
-figure(4)
-subplot(1,3,1)
+figure(2)
+subplot(1,2,1)
 imagesc(croppedImage)
 colormap(hot)
-colorbar
-title(['Cropped Image for ' ...
-    'M' num2str(mice(mouse)) ' ST' num2str(sessionType) ' S' num2str(session)])
+z = colorbar;
+ylabel(z,'Intensity (A.U.)', ...
+    'FontSize', fontSize,...
+    'FontWeight', 'bold')
+title(['Cropped Image - ' mouseName, ...
+    ' ST' num2str(sessionType) ' S' num2str(session)], ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
 
-subplot(1,3,2)
-imagesc(croppedImage_medfilt)
-colormap(hot)
-colorbar
-title('Median Filtered')
-
-subplot(1,3,3)
+subplot(1,2,2)
 imagesc(croppedImage_binary)
 colormap(hot)
-colorbar
-title('Binarized')
+z = colorbar;
+ylabel(z,'Intensity (A.U.)', ...
+    'FontSize', fontSize,...
+    'FontWeight', 'bold')
+title('Binarized', ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
+
+if plotHistogram == 1
+    hist_crop = imhist(croppedImage);
+    hist_crop_medfilt = imhist(refImage_medfilt);
+    figure(3)
+    subplot(1,2,1)
+    plot(hist_crop)
+    title(['Histogram (Cropped Image) - ' mouseName ' ST' num2str(sessionType) ' S' num2str(session)])
+    xlabel('Value', ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
+    ylabel('Counts', ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
+    subplot(1,2,2)
+    plot(hist_crop_medfilt)
+    %axis([0 60 0 500])
+    title('Median Filtered')
+    xlabel('Value', ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
+    ylabel(' Counts', ...
+    'FontSize', fontSize, ...
+    'FontWeight', 'bold')
+end
