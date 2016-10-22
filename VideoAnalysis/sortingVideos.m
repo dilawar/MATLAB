@@ -19,7 +19,7 @@ singleVideo = 0; %Does the session have only one video or several?
 %Dataset details
 mice = [1 2 3 4 5];
 sessionType = 9;
-nSessions = 5;
+nSessions = 6;
 nTrials = 61;
 
 %Video details
@@ -99,3 +99,4 @@ for mouse = 1:length(mice)
     end
 end
 disp('All Done!')
+beep
