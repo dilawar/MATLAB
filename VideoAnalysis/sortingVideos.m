@@ -5,8 +5,8 @@
 close all
 clear all
 
-% The variale raw is defined by the following dimensions: 276x276x3xnFrames
-% and is saved for every trial
+% The variale raw is defined by the following dimensions: height x width x
+% 3 x nFrames, and is saved for every trial
 
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
@@ -19,7 +19,7 @@ singleVideo = 0; %Does the session have only one video or several?
 %Dataset details
 mice = [1 2 3 4 5];
 sessionType = 9;
-nSessions = 6;
+nSessions = 7;
 nTrials = 61;
 
 %Video details
