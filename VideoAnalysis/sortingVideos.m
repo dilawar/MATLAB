@@ -2,6 +2,7 @@
 % PURPOSE - To segment eye-blink behaviour videos into appropriate trials
 % and save as .mat files (MATLAB-friendly)
 
+tic
 close all
 clear all
 
@@ -18,7 +19,7 @@ singleVideo = 0; %Does the session have only one video or several?
 %Dataset details
 mice = [1 2 3 4 5];
 sessionType = 9;
-nSessions = 7;
+nSessions = 9;
 nTrials = 61;
 
 %Video details
@@ -37,19 +38,19 @@ direc = '/Users/ananth/Desktop/Work/Behaviour/Videos/';
 
 for mouse = 1:length(mice)
     
-    mouseName = ['MouseM' num2str(mice(mouse))];
+    mouseName = ['M' num2str(mice(mouse))];
     
     for session = startSession:nSessions
-        dataset = [mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
+        dataset = ['Mouse' mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
         disp(dataset);
-        saveFolder = [saveDirec mouseName '/' dataset '/'];
+        saveFolder = [saveDirec 'Mouse' mouseName '/' dataset '/'];
         if ~isdir(saveFolder)
             mkdir(saveFolder);
         end
         if sortVideos == 1
             disp('Sorting Videos ...')
             if singleVideo == 1
-                fileName = [direc mouseName '/' dataset '/M' ...
+                fileName = [direc 'Mouse' mouseName '/' dataset '/M' ...
                     num2str(mice(mouse)) '_ST' num2str(sessionType) ...
                     '_S' num2str(session) '.avi'];
                 %disp(fileName);
@@ -67,7 +68,7 @@ for mouse = 1:length(mice)
                 for trial = startTrial:nTrials
                     %beep;
                     disp(['Trial ' num2str(trial-1)]);
-                    fileName = [direc mouseName '/' dataset '/Trial' num2str(trial) '.avi']; %post ffmpeg conversion
+                    fileName = [direc 'Mouse' mouseName '/' dataset '/Trial' num2str(trial) '.avi']; %post ffmpeg conversion
                     %disp(fileName);
                     try
                         video = VideoReader(fileName);
@@ -98,4 +99,5 @@ for mouse = 1:length(mice)
     end
 end
 disp('All Done!')
+toc
 beep

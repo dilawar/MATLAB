@@ -1,5 +1,5 @@
 % AUTHOR - Kambadur Ananthamurthy
-% PURPOSE - Analysis code for TEC behaviour including FEC and Motion
+% PURPOSE - FEC analysis
 % DEPENDENCIES - First sort all trials as .mat files using sortingVideos.m
 
 tic
@@ -11,7 +11,6 @@ addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 %Operations
 saveData = 0;
 doFECAnalysis = 1;
-doMotionAnalysis = 0;
 plotFigures = 1;
 playVideo = 0;
 
@@ -44,7 +43,6 @@ fontSize = 12;
 
 eyeClosure = zeros(nTrials,nFrames); %for every individual session
 fec = zeros(nTrials,nFrames); %fractional; for every individual session
-motion = zeros(nTrials,nFrames); %!! EDIT !!
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
@@ -106,11 +104,6 @@ for mouse = 1:length(mice)
                             'FontWeight', 'bold')
                     end
                 end
-                
-                if doMotionAnalysis == 1
-                    disp('Performing motion analysis ...')
-                end
-                
                 disp('... done')
             end
             
