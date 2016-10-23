@@ -5,8 +5,7 @@
 close all
 clear all
 
-% The variale raw is defined by the following dimensions: height x width x
-% 3 x nFrames, and is saved for every trial
+% "raw" is defined as height x width x 3 x nFrames, and is saved for every trial
 
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 

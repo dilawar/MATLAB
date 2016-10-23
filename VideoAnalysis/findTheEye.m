@@ -11,14 +11,20 @@ saveData = 0;
 plotHistogram = 0;
 playVideo = 1;
 
+crop = [120 55 50 30]; %[xmin ymin width height]
+m = 5; %for median filter
+level = 0.45; %for binarization
+
 if playVideo == 1
     nTrials = 60;
-    startTrial = 1;
+    startTrial = 9;
+    startFrame = 1;
     
     %Video details
     samplingRate = 100; % in Frames Per Second (FPS)
     trialDuration = 2; % in seconds
-    nFrames = samplingRate*trialDuration; %per trial
+    nFrames = 80;
+    %nFrames = samplingRate*trialDuration; %per trial
 end
 
 %Dataset details
@@ -34,132 +40,30 @@ disp(['Working on ' dataset])
 
 fontSize = 12;
 
-%Load the reference image (first image in Trial 1)
-raw = load([direc 'Mouse' mouseName '/' dataset '/' dataset '_Trial1']);
-%refImage = rgb2gray(raw.raw(:,:,:,1));
-refImage = rgb2gray(raw.raw(:,:,:,1));
-figure(1)
-subplot(1,3,1)
-imagesc(refImage)
-z = colorbar;
-ylabel(z,'Intensity (A.U.)', ...
-    'FontSize', fontSize,...
-    'FontWeight', 'bold')
-title(['Reference Image - ' mouseName, ...
-    ' ST' num2str(sessionType) ' S' num2str(session)], ...
-    'FontSize', fontSize, ...
-    'FontWeight', 'bold')
-%Equalize histogram
-refImage_histeq = histeq(refImage);
-subplot(1,3,2)
-imagesc(refImage_histeq)
-z = colorbar;
-ylabel(z,'Intensity (A.U.)', ...
-    'FontSize', fontSize,...
-    'FontWeight', 'bold')
-title('Histogram Equalized', ...
-    'FontSize', fontSize, ...
-    'FontWeight', 'bold')
-
-%Median filter
-refImage_medfilt = medfilt2(refImage_histeq,[10 10]);
-subplot(1,3,3)
-imagesc(refImage_medfilt)
-colormap(hot)
-z = colorbar;
-ylabel(z,'Intensity (A.U.)', ...
-    'FontSize', fontSize, ...
-    'FontWeight', 'bold')
-title('Median Filtered', ...
-    'FontSize', fontSize, ...
-    'FontWeight', 'bold')
-
-%Crop image
-%rectCrop = [100 35 50 30]; %[xmin ymin width height]
-rectCrop = [120 55 50 30]; %[xmin ymin width height]
-croppedImage = imcrop(refImage_medfilt,rectCrop);
-
-%Binarize
-croppedImage_binary = im2bw(croppedImage,0.45);
-%croppedImage_binary = imbinarize(croppedImage);
-
-figure(2)
-subplot(1,2,1)
-imagesc(croppedImage)
-colormap(hot)
-z = colorbar;
-ylabel(z,'Intensity (A.U.)', ...
-    'FontSize', fontSize,...
-    'FontWeight', 'bold')
-title(['Cropped Image - ' mouseName, ...
-    ' ST' num2str(sessionType) ' S' num2str(session)], ...
-    'FontSize', fontSize, ...
-    'FontWeight', 'bold')
-
-subplot(1,2,2)
-imagesc(croppedImage_binary)
-colormap(hot)
-z = colorbar;
-ylabel(z,'Intensity (A.U.)', ...
-    'FontSize', fontSize,...
-    'FontWeight', 'bold')
-title('Binarized', ...
-    'FontSize', fontSize, ...
-    'FontWeight', 'bold')
-
 if playVideo == 1
+    disp('Playing Video ...');
     for trial = startTrial:nTrials
         %Load the reference image (first image in Trial 1)
         raw = load([direc 'Mouse' mouseName '/' dataset, ...
             '/' dataset '_Trial' num2str(trial)]);
-        for frame = 1:nFrames
+        for frame = startFrame:nFrames
             refImage = rgb2gray(raw.raw(:,:,:,frame));
-            figure(1)
-            subplot(1,3,1)
-            imagesc(refImage)
-            z = colorbar;
-            ylabel(z,'Intensity (A.U.)', ...
-                'FontSize', fontSize,...
-                'FontWeight', 'bold')
-            title(['Reference Image - ' mouseName, ...
-                ' ST' num2str(sessionType) ' S' num2str(session)], ...
-                'FontSize', fontSize, ...
-                'FontWeight', 'bold')
+            
             %Equalize histogram
             refImage_histeq = histeq(refImage);
-            subplot(1,3,2)
-            imagesc(refImage_histeq)
-            z = colorbar;
-            ylabel(z,'Intensity (A.U.)', ...
-                'FontSize', fontSize,...
-                'FontWeight', 'bold')
-            title('Histogram Equalized', ...
-                'FontSize', fontSize, ...
-                'FontWeight', 'bold')
             
             %Median filter
-            refImage_medfilt = medfilt2(refImage_histeq,[10 10]);
-            subplot(1,3,3)
-            imagesc(refImage_medfilt)
-            colormap(hot)
-            z = colorbar;
-            ylabel(z,'Intensity (A.U.)', ...
-                'FontSize', fontSize, ...
-                'FontWeight', 'bold')
-            title('Median Filtered', ...
-                'FontSize', fontSize, ...
-                'FontWeight', 'bold')
+            refImage_medfilt = medfilt2(refImage_histeq,[m m]);
             
             %Crop image
-            %rectCrop = [100 35 50 30]; %[xmin ymin width height]
-            rectCrop = [120 55 50 30]; %[xmin ymin width height]
-            croppedImage = imcrop(refImage_medfilt,rectCrop);
+            croppedImage = imcrop(refImage_medfilt,crop);
             
             %Binarize
-            croppedImage_binary = im2bw(croppedImage,0.45);
+            croppedImage_binary = im2bw(croppedImage,level);
             %croppedImage_binary = imbinarize(croppedImage);
             
             figure(2)
+            pause(0.1)
             subplot(1,2,1)
             imagesc(croppedImage)
             colormap(hot)
@@ -167,8 +71,9 @@ if playVideo == 1
             ylabel(z,'Intensity (A.U.)', ...
                 'FontSize', fontSize,...
                 'FontWeight', 'bold')
-            title(['Cropped Image - ' mouseName, ...
-                ' ST' num2str(sessionType) ' S' num2str(session)], ...
+            title(['Cropped Image ' mouseName ...
+                ' ST' num2str(sessionType) ' S' num2str(session) ...
+                ' Trial ' num2str(trial)], ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
             
@@ -179,11 +84,84 @@ if playVideo == 1
             ylabel(z,'Intensity (A.U.)', ...
                 'FontSize', fontSize,...
                 'FontWeight', 'bold')
-            title('Binarized', ...
+            title(['Binarized Frame ' num2str(frame)], ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
         end
     end
+else
+    %Load the reference image (first image in Trial 1)
+    raw = load([direc 'Mouse' mouseName '/' dataset '/' dataset '_Trial1']);
+    refImage = rgb2gray(raw.raw(:,:,:,1));
+    figure(1)
+    subplot(1,3,1)
+    imagesc(refImage)
+    z = colorbar;
+    ylabel(z,'Intensity (A.U.)', ...
+        'FontSize', fontSize,...
+        'FontWeight', 'bold')
+    title(['Reference Image - ' mouseName, ...
+        ' ST' num2str(sessionType) ' S' num2str(session)], ...
+        'FontSize', fontSize, ...
+        'FontWeight', 'bold')
+    
+    %Equalize histogram
+    refImage_histeq = histeq(refImage);
+    subplot(1,3,2)
+    imagesc(refImage_histeq)
+    z = colorbar;
+    ylabel(z,'Intensity (A.U.)', ...
+        'FontSize', fontSize,...
+        'FontWeight', 'bold')
+    title('Histogram Equalized', ...
+        'FontSize', fontSize, ...
+        'FontWeight', 'bold')
+    
+    %Median filter
+    refImage_medfilt = medfilt2(refImage_histeq,[m m]);
+    subplot(1,3,3)
+    imagesc(refImage_medfilt)
+    colormap(hot)
+    z = colorbar;
+    ylabel(z,'Intensity (A.U.)', ...
+        'FontSize', fontSize, ...
+        'FontWeight', 'bold')
+    title('Median Filtered', ...
+        'FontSize', fontSize, ...
+        'FontWeight', 'bold')
+    
+    %Crop image
+    %rectCrop = [100 35 50 30]; %[xmin ymin width height]
+    crop = [120 55 50 30]; %[xmin ymin width height]
+    croppedImage = imcrop(refImage_medfilt,crop);
+    
+    %Binarize
+    croppedImage_binary = im2bw(croppedImage,level);
+    %croppedImage_binary = imbinarize(croppedImage);
+    
+    figure(2)
+    subplot(1,2,1)
+    imagesc(croppedImage)
+    colormap(hot)
+    z = colorbar;
+    ylabel(z,'Intensity (A.U.)', ...
+        'FontSize', fontSize,...
+        'FontWeight', 'bold')
+    title(['Cropped Image - ' mouseName, ...
+        ' ST' num2str(sessionType) ' S' num2str(session)], ...
+        'FontSize', fontSize, ...
+        'FontWeight', 'bold')
+    
+    subplot(1,2,2)
+    imagesc(croppedImage_binary)
+    colormap(hot)
+    z = colorbar;
+    ylabel(z,'Intensity (A.U.)', ...
+        'FontSize', fontSize,...
+        'FontWeight', 'bold')
+    title('Binarized', ...
+        'FontSize', fontSize, ...
+        'FontWeight', 'bold')
     
     if plotHistogram == 1
         hist_crop = imhist(croppedImage);
@@ -210,3 +188,4 @@ if playVideo == 1
             'FontWeight', 'bold')
     end
 end
+disp('All done!')
