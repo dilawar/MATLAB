@@ -16,20 +16,26 @@ playVideo = 0;
 
 %Video details
 samplingRate = 100; % in Frames Per Second (FPS)
-trialDuration = 2; % in seconds
-nFrames = samplingRate*trialDuration; %per trial
+trialDuration = 1.5; % in seconds
+nFrames = floor(samplingRate*trialDuration); %per trial
 startFrame = 1;
 
-crop = [120 55 50 30]; %[xmin ymin width height]
-fecROI = 30:40; %to avoid the regions where the blue LED light flashes
-m = 5; %for median filter
-level = 0.5; %for binarization
+%Contrast adjustment parameters
+low_in = 0;
+high_in = 0.2;
+low_out = 0;
+high_out = 1;
+
+crop = [129 59 39 24]; %[xmin ymin width height]
+fecROI = 15:30;
+m = 10; %for median filter
+level = 0.01; %for binarization
 
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-mice = 5;
-nSessions = 5;
+mice = 2;
+nSessions = 8;
 nTrials = 60; % NOTE: During sorting, the dummy trial was excluded
 
 startSession = nSessions; %single sessions
@@ -42,6 +48,7 @@ direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 fontSize = 12;
 
 eyeClosure = zeros(nTrials,nFrames); %for every individual session
+eyeClosure_baseline = zeros(nTrials,1);
 fec = zeros(nTrials,nFrames); %fractional; for every individual session
 
 for mouse = 1:length(mice)
@@ -56,25 +63,26 @@ for mouse = 1:length(mice)
             %Analyze every trial for FEC
             for trial = startTrial:nTrials
                 disp(['Trial ' num2str(trial)])
-                raw = load([direc 'Mouse' mouseName '/' dataset '/' dataset '_Trial' num2str(trial)]);
+                %1 - Load the reference image (first image in Trial 1)
+                raw = load([direc 'Mouse' mouseName '/' dataset, ...
+                    '/' dataset '_Trial' num2str(trial)]);
                 
                 for frame = startFrame:nFrames
                     refImage = rgb2gray(raw.raw(:,:,:,frame));
                     
-                    %Equalize histogram
-                    refImage_histeq = histeq(refImage);
+                    % 2 - Adjust contrast
+                    refImage2 = imadjust(refImage,[low_in; high_in],[low_out; high_out]);
                     
-                    %Median filter
-                    refImage_medfilt = medfilt2(refImage_histeq,[m m]);
+                    %3 - Median filter
+                    refImage3 = medfilt2(refImage2,[m m]);
                     
-                    %Crop image
-                    croppedImage = imcrop(refImage_medfilt,crop);
+                    %4 - Crop image
+                    croppedImage = imcrop(refImage3,crop);
                     
-                    %Binarize
-                    croppedImage_binary = im2bw(croppedImage,level);
-                    %croppedImage_binary = imbinarize(croppedImage);
+                    %5 - Binarize
+                    croppedImage2 = im2bw(croppedImage,level);
                     
-                    eyeClosure(trial,frame) = length(find(~croppedImage_binary(:,fecROI)));
+                    eyeClosure(trial,frame) = length(find(~croppedImage2(:,fecROI)));
                     
                     if playVideo == 1
                         figure(2)
@@ -93,7 +101,7 @@ for mouse = 1:length(mice)
                             'FontWeight', 'bold')
                         
                         subplot(1,2,2)
-                        imagesc(croppedImage_binary)
+                        imagesc(croppedImage2)
                         colormap(hot)
                         z = colorbar;
                         ylabel(z,'Intensity (A.U.)', ...
@@ -104,11 +112,38 @@ for mouse = 1:length(mice)
                             'FontWeight', 'bold')
                     end
                 end
+                eyeClosure_baseline(trial) = max(eyeClosure(trial,:));
+                fec(trial,:) = (1 - eyeClosure(trial,:)/eyeClosure_baseline(trial));
                 disp('... done')
             end
             
-            eyeClosure_baseline = max(median(eyeClosure,2));
-            fec = 1 - eyeClosure/eyeClosure_baseline;
+            %eyeClosure_baseline = max(max(eyeClosure));
+            %fec = 1 - eyeClosure/eyeClosure_baseline;
+            time = 1:(1*1000/samplingRate):nFrames*1000/samplingRate;
+            if plotFigures == 1
+                figure(3)
+                for trial = 1:nTrials
+                    plot(time,((fec(trial,:)*2+(1*(trial-1)))),...
+                        'black', 'LineWidth', 2)
+                    hold on
+                end
+                axis([0 max(time) 1 nTrials]);
+                title([mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                xlabel('Time/ms', ...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                set(gca,'xtick',[200 400 600 ...
+                    800 1000 1200 1400 1600 ...
+                    1800 2000])
+                ylabel('Trials', ...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                ylim([0 nTrials+1])
+                %set(gca,'yticklabel',[])
+                set(gca,'ytick',[20 40 60])
+            end
             
             if saveData == 1
                 saveFolder = [saveDirec mouseName '/' dataset '/'];
@@ -123,42 +158,10 @@ for mouse = 1:length(mice)
                 %Save Motion data
                 save([saveFolder 'motion' ],'motion')
             end
-            
-            if plotFigures == 1
-                figure(3)
-                imagesc(fec)
-                colormap(hot)
-                colorbar
-                %waterfall(fec)
-                title([mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                xlabel('Frame', ...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                ylabel('Trial', ...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                z = colorbar;
-                ylabel(z,'FEC', ...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                
-                %                 figure(4)
-                %                 plot(eyeClosure_baselines, 'LineWidth', 2)
-                %                 title(dataset,...
-                %                     'FontSize', fontSize,...
-                %                     'FontWeight', 'bold')
-                %                 xlabel('Frame', ...
-                %                     'FontSize', fontSize,...
-                %                     'FontWeight', 'bold')
-                %                 ylabel('Trial', ...
-                %                     'FontSize', fontSize,...
-                %                     'FontWeight', 'bold')
-            end
             disp([dataset ' analyzed'])
         end
     end
 end
 disp('All done!')
 toc
+beep
