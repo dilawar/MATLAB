@@ -18,6 +18,8 @@ singleVideo = 0; %Does the session have only one video or several?
 
 %Dataset details
 mice = [1 2 3 4 5];
+%mice = 1;
+%mice = [2 3 4 5];
 sessionType = 9;
 nSessions = 9;
 nTrials = 61;

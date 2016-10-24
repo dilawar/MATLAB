@@ -12,31 +12,32 @@ playVideo = 1;
 
 %Contrast adjustment parameters
 low_in = 0;
-high_in = 0.2;
+high_in = 1;
 low_out = 0;
 high_out = 1;
 
-crop = [129 55 39 24]; %[xmin ymin width height]
-fecROI = 15:30;
-m = 5; %for median filter
-level = 0.01; %for binarization
+crop = [108 45 39 24]; %[xmin ymin width height]
+fecROI = (22:37);
+m = 3; %for median filter
+level = 0.27; %for binarization
 
 if playVideo == 1
     nTrials = 1;
     startTrial = 1;
     startFrame = 1;
+    %startFrame = 75;
     
     %Video details
-    samplingRate = 100; % in Frames Per Second (FPS)
-    trialDuration = 1; % in seconds
-    %nFrames = 60;
-    nFrames = samplingRate*trialDuration; %per trial
+    samplingRate = 118; % in Frames Per Second (FPS)
+    trialDuration = 1.5; % in seconds
+    %nFrames = floor(samplingRate*trialDuration); %per trial
+    nFrames = 100;
 end
 
 %Dataset details
-mouseName = 'M2';
+mouseName = 'M3';
 sessionType = 9;
-session = 8;
+session = 1;
 
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
@@ -98,22 +99,31 @@ else
     %1 - Load the reference image (first image in Trial 1)
     raw = load([direc 'Mouse' mouseName '/' dataset '/' dataset '_Trial1']);
     refImage = rgb2gray(raw.raw(:,:,:,1));
-    
     %2 - Adjust contrast
     refImage2 = imadjust(refImage,[low_in; high_in],[low_out; high_out]);
-    
     
     %3 - Median filter
     refImage3 = medfilt2(refImage2,[m m]);
     
     %4 - Crop image
     croppedImage = imcrop(refImage3,crop);
+    croppedImage_new = imcrop(refImage,crop);
     
     %5 - Binarize
     croppedImage2 = im2bw(croppedImage,level);
     
     figure(1)
-    subplot(1,2,1)
+    subplot(1,3,1)
+    imagesc(refImage)
+    z = colorbar;
+    ylabel(z,'Intensity (A.U.)', ...
+        'FontSize', fontSize,...
+        'FontWeight', 'bold')
+    title('Original', ...
+        'FontSize', fontSize, ...
+        'FontWeight', 'bold')
+    
+    subplot(1,3,2)
     imagesc(refImage2)
     z = colorbar;
     ylabel(z,'Intensity (A.U.)', ...
@@ -123,7 +133,7 @@ else
         'FontSize', fontSize, ...
         'FontWeight', 'bold')
     
-    subplot(1,2,2)
+    subplot(1,3,3)
     imagesc(refImage3)
     colormap(hot)
     z = colorbar;
@@ -134,7 +144,7 @@ else
         'FontSize', fontSize, ...
         'FontWeight', 'bold')
     
-    figure(2)
+    figure(3)
     subplot(1,3,1)
     imagesc(croppedImage);
     colormap(hot)

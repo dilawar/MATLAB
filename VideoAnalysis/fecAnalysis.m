@@ -9,40 +9,40 @@ close all
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
 %Operations
-saveData = 0;
+saveData = 1;
 doFECAnalysis = 1;
 plotFigures = 1;
 playVideo = 0;
-
-%Video details
-samplingRate = 100; % in Frames Per Second (FPS)
-trialDuration = 1.5; % in seconds
-nFrames = floor(samplingRate*trialDuration); %per trial
-startFrame = 1;
-
-%Contrast adjustment parameters
-low_in = 0;
-high_in = 0.2;
-low_out = 0;
-high_out = 1;
-
-crop = [129 59 39 24]; %[xmin ymin width height]
-fecROI = 15:30;
-m = 10; %for median filter
-level = 0.01; %for binarization
 
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
 mice = 2;
-nSessions = 8;
+nSessions = 1;
 nTrials = 60; % NOTE: During sorting, the dummy trial was excluded
 
 startSession = nSessions; %single sessions
 %startSession = 1;
 startTrial = 1; % NOTE: During sorting, the dummy trial was excluded
 
-saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/';
+%Video details
+samplingRate = 118; % in Frames Per Second (FPS)
+trialDuration = 1.5; % in seconds
+nFrames = floor(samplingRate*trialDuration); %per trial
+startFrame = 1;
+
+%Contrast adjustment parameters
+low_in = 0;
+high_in = 1;
+low_out = 0;
+high_out = 1;
+
+crop = [108 45 39 24]; %[xmin ymin width height]
+fecROI = (22:37);
+m = 3; %for median filter
+level = 0.27; %for binarization
+
+saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 
 fontSize = 12;
@@ -119,7 +119,7 @@ for mouse = 1:length(mice)
             
             %eyeClosure_baseline = max(max(eyeClosure));
             %fec = 1 - eyeClosure/eyeClosure_baseline;
-            time = 1:(1*1000/samplingRate):nFrames*1000/samplingRate;
+            time = 1:(1*1000/samplingRate):nFrames*1000/samplingRate; % in ms
             if plotFigures == 1
                 figure(3)
                 for trial = 1:nTrials
@@ -141,8 +141,13 @@ for mouse = 1:length(mice)
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
                 ylim([0 nTrials+1])
-                %set(gca,'yticklabel',[])
-                set(gca,'ytick',[20 40 60])
+                set(gca,'yticklabel',[])
+                set(gca,'ytick',[1 60])
+                
+                print(['/Users/ananth/Desktop/figs/fec_' mouseName ...
+                    '_ST' num2str(sessionType) ...
+                    'S' num2str(session)],...
+                    '-djpeg');
             end
             
             if saveData == 1
@@ -152,11 +157,10 @@ for mouse = 1:length(mice)
                 end
                 
                 %Save FEC curve
-                save([saveFolder 'eyeClosure' ],'eyeClosure')
-                save([saveFolder 'fec'],'fec')
+                save([saveFolder 'fec.mat' ], ...
+                    'eyeClosure',...
+                    'fec')
                 
-                %Save Motion data
-                save([saveFolder 'motion' ],'motion')
             end
             disp([dataset ' analyzed'])
         end
