@@ -3,8 +3,8 @@
 % DEPENDENCIES - First sort all trials as .mat files using sortingVideos.m
 
 tic
-%clear all
-close all
+clear all
+%close all
 
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
@@ -17,30 +17,14 @@ playVideo = 0;
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-mice = 2;
-nSessions = 1;
+mice = 1;
+nSessions = 3;
 nTrials = 60; % NOTE: During sorting, the dummy trial was excluded
 
 startSession = nSessions; %single sessions
 %startSession = 1;
 startTrial = 1; % NOTE: During sorting, the dummy trial was excluded
-
-%Video details
-samplingRate = 118; % in Frames Per Second (FPS)
-trialDuration = 1.5; % in seconds
-nFrames = floor(samplingRate*trialDuration); %per trial
 startFrame = 1;
-
-%Contrast adjustment parameters
-low_in = 0;
-high_in = 1;
-low_out = 0;
-high_out = 1;
-
-crop = [108 45 39 24]; %[xmin ymin width height]
-fecROI = (22:37);
-m = 3; %for median filter
-level = 0.27; %for binarization
 
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
@@ -60,6 +44,12 @@ for mouse = 1:length(mice)
         
         if doFECAnalysis == 1
             disp('Performing FEC analysis ...')
+            load([saveDirec 'Mouse' mouseName '/' dataset '/imageProcess.mat']);
+            
+            %Video details
+            nFrames = floor(samplingRate*trialDuration); %per trial
+            time = 1:(1*1000/samplingRate):nFrames*1000/samplingRate; % in ms
+            
             %Analyze every trial for FEC
             for trial = startTrial:nTrials
                 disp(['Trial ' num2str(trial)])
@@ -82,7 +72,7 @@ for mouse = 1:length(mice)
                     %5 - Binarize
                     croppedImage2 = im2bw(croppedImage,level);
                     
-                    eyeClosure(trial,frame) = length(find(~croppedImage2(:,fecROI)));
+                    eyeClosure(trial,frame) = (length(find(~croppedImage2(:,fecROI))))/length(find(croppedImage(:,fecROI)));
                     
                     if playVideo == 1
                         figure(2)
@@ -117,15 +107,13 @@ for mouse = 1:length(mice)
                 disp('... done')
             end
             
-            %eyeClosure_baseline = max(max(eyeClosure));
-            %fec = 1 - eyeClosure/eyeClosure_baseline;
-            time = 1:(1*1000/samplingRate):nFrames*1000/samplingRate; % in ms
             if plotFigures == 1
-                figure(3)
+                figure(4)
+                clf
                 for trial = 1:nTrials
-                    plot(time,((fec(trial,:)*2+(1*(trial-1)))),...
-                        'black', 'LineWidth', 2)
                     hold on
+                    plot(time,((fec(trial,:)*3+(1*(trial-1)))),...
+                        'black', 'LineWidth', 2)
                 end
                 axis([0 max(time) 1 nTrials]);
                 title([mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
@@ -134,33 +122,34 @@ for mouse = 1:length(mice)
                 xlabel('Time/ms', ...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
-                set(gca,'xtick',[200 400 600 ...
-                    800 1000 1200 1400 1600 ...
-                    1800 2000])
+                set(gca,'xtick',[100 300 500 ...
+                    700 900 1100 ...
+                    1300 1500])
                 ylabel('Trials', ...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
-                ylim([0 nTrials+1])
-                set(gca,'yticklabel',[])
+                ylim([0 nTrials+3])
+                set(gca,'yticklabel',[1 60])
                 set(gca,'ytick',[1 60])
                 
                 print(['/Users/ananth/Desktop/figs/fec_' mouseName ...
                     '_ST' num2str(sessionType) ...
-                    'S' num2str(session)],...
+                    '_S' num2str(session)],...
                     '-djpeg');
             end
             
             if saveData == 1
-                saveFolder = [saveDirec mouseName '/' dataset '/'];
+                saveFolder = [saveDirec 'Mouse' mouseName '/' dataset '/'];
                 if ~isdir(saveFolder)
                     mkdir(saveFolder);
                 end
                 
                 %Save FEC curve
                 save([saveFolder 'fec.mat' ], ...
-                    'eyeClosure',...
-                    'fec')
-                
+                    'eyeClosure', 'fec', ...
+                    'low_in', 'high_in', 'low_out', 'high_out',...
+                    'crop', 'fecROI', 'm', 'level',...
+                    'samplingRate','trialDuration')
             end
             disp([dataset ' analyzed'])
         end
