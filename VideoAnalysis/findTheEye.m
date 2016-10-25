@@ -7,37 +7,45 @@
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
 %Operations
-saveData = 0;
+saveData = 1;
 playVideo = 0;
 
-crop = [123 54 39 29]; %[xmin ymin width height]
+%Cropping parameters
+xmin = 125;
+ymin = 54;
+width = 39;
+height = 29;
+crop = [xmin ymin width height]; %[xmin ymin width height]
 fecROI = (20:40);
+
+%Filters
 m = 3; %for median filter
-level = 0.025; %for binarization
+level = 0.07; %for binarization
 
 %Contrast adjustment parameters
 low_in = 0;
-high_in = 0.9;
+high_in = 0.5;
 low_out = 0;
 high_out = 1;
 
 %Dataset details
 sessionType = 9;
+%mice = [1 2 3 4 5];
 mice = 1;
 nSessions = 3;
 nTrials = 1;
 
 startSession = nSessions;
 startTrial = 1;
-startFrame = 35;
+startFrame = 1;
 
 %Video details
 samplingRate = 100.5; % in Frames Per Second (FPS)
 trialDuration = 1.5; % in seconds
-%nFrames = floor(samplingRate*trialDuration); %per trial
-nFrames = 110;
+nFrames = floor(samplingRate*trialDuration); %per trial
+%nFrames = 110;
 
-saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/';
+saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/ImageProcess/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 
 fontSize = 12;
@@ -67,8 +75,8 @@ for mouse = 1:length(mice)
                     %4 - Crop image
                     croppedImage = imcrop(refImage3,crop);
                     
+                    pause(0.1)
                     figure(2)
-                    pause(0.05)
                     subplot(1,3,1)
                     imagesc(croppedImage)
                     colormap(hot)
@@ -76,7 +84,7 @@ for mouse = 1:length(mice)
                     ylabel(z,'Intensity (A.U.)', ...
                         'FontSize', fontSize,...
                         'FontWeight', 'bold')
-                    title(['Eye ' mouseName ...
+                    title(['Eye - ' mouseName ...
                         ' ST' num2str(sessionType) ' S' num2str(session) ...
                         ' Trial ' num2str(trial) ...
                         ' Frame ' num2str(frame)], ...
@@ -92,7 +100,7 @@ for mouse = 1:length(mice)
                     ylabel(z,'Intensity (A.U.)', ...
                         'FontSize', fontSize, ...
                         'FontWeight', 'bold')
-                    title(['Binary Frame ' num2str(frame)], ...
+                    title(['Binarized Frame ' num2str(frame)], ...
                         'FontSize', fontSize, ...
                         'FontWeight', 'bold')
                     
@@ -112,6 +120,7 @@ for mouse = 1:length(mice)
             %1 - Load the reference image (first image in Trial 1)
             raw = load([direc 'Mouse' mouseName '/' dataset '/' dataset '_Trial1']);
             refImage = rgb2gray(raw.raw(:,:,:,1));
+            
             %2 - Adjust contrast
             refImage2 = imadjust(refImage,[low_in; high_in],[low_out; high_out]);
             
@@ -120,7 +129,7 @@ for mouse = 1:length(mice)
             
             %4 - Crop image
             croppedImage = imcrop(refImage3,crop);
-            croppedImage_new = imcrop(refImage,crop);
+            %croppedImage_new = imcrop(refImage,crop);
             
             %5 - Binarize
             croppedImage2 = im2bw(croppedImage,level);
@@ -153,7 +162,8 @@ for mouse = 1:length(mice)
             ylabel(z,'Intensity (A.U.)', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
-            title('Median Filtered', ...
+            title(['Median Filtered [' ...
+                num2str(m) 'x' num2str(m) ']' ], ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
             
@@ -165,7 +175,7 @@ for mouse = 1:length(mice)
             ylabel(z,'Intensity (A.U.)', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
-            title('Normal', ...
+            title('Original (cropped)', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
             
@@ -176,7 +186,8 @@ for mouse = 1:length(mice)
             ylabel(z,'Intensity (A.U.)', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
-            title('Filtered', ...
+            title(['Median Filtered [' ...
+                num2str(m) 'x' num2str(m) ']' ],...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
             
@@ -187,7 +198,7 @@ for mouse = 1:length(mice)
             ylabel(z,'Intensity (A.U.)', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
-            title('Binary', ...
+            title('Binarized', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
         end

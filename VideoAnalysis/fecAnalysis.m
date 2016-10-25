@@ -1,6 +1,7 @@
 % AUTHOR - Kambadur Ananthamurthy
 % PURPOSE - FEC analysis
-% DEPENDENCIES - First sort all trials as .mat files using sortingVideos.m
+% DEPENDENCIES - 1) Sort all trials as .mat files using sortingVideos.m
+%                2) Find the image processing parameters using findTheEye.m
 
 tic
 clear all
@@ -26,14 +27,11 @@ startSession = nSessions; %single sessions
 startTrial = 1; % NOTE: During sorting, the dummy trial was excluded
 startFrame = 1;
 
+loadDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/ImageProcess/';
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 
 fontSize = 12;
-
-eyeClosure = zeros(nTrials,nFrames); %for every individual session
-eyeClosure_baseline = zeros(nTrials,1);
-fec = zeros(nTrials,nFrames); %fractional; for every individual session
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
@@ -44,11 +42,18 @@ for mouse = 1:length(mice)
         
         if doFECAnalysis == 1
             disp('Performing FEC analysis ...')
-            load([saveDirec 'Mouse' mouseName '/' dataset '/imageProcess.mat']);
+            
+            %load image processing parameters
+            load([loadDirec 'Mouse' mouseName '/' dataset '/imageProcess.mat']);
             
             %Video details
             nFrames = floor(samplingRate*trialDuration); %per trial
             time = 1:(1*1000/samplingRate):nFrames*1000/samplingRate; % in ms
+            
+            %Preallocations
+            eyeClosure = zeros(nTrials,nFrames); %for every individual session
+            eyeClosure_baseline = zeros(nTrials,1);
+            fec = zeros(nTrials,nFrames); %fractional; for every individual session
             
             %Analyze every trial for FEC
             for trial = startTrial:nTrials
@@ -116,7 +121,8 @@ for mouse = 1:length(mice)
                         'black', 'LineWidth', 2)
                 end
                 axis([0 max(time) 1 nTrials]);
-                title([mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
+                title(['FEC [0: OPEN; 1: CLOSED] - ' ...
+                    mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
                 xlabel('Time/ms', ...
