@@ -9,7 +9,7 @@ clear all
 
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
-%Operations
+%Operations (0 == Don't Perform; 1 == Perform)
 saveData = 1;
 doFECAnalysis = 1;
 plotFigures = 1;
@@ -18,12 +18,12 @@ playVideo = 0;
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-mice = 1;
-nSessions = 3;
+mice = 5;
+nSessions = 12;
 nTrials = 60; % NOTE: During sorting, the dummy trial was excluded
 
 startSession = nSessions; %single sessions
-%startSession = 1;
+%startSession = 3;
 startTrial = 1; % NOTE: During sorting, the dummy trial was excluded
 startFrame = 1;
 
@@ -50,10 +50,10 @@ for mouse = 1:length(mice)
             nFrames = floor(samplingRate*trialDuration); %per trial
             time = 1:(1*1000/samplingRate):nFrames*1000/samplingRate; % in ms
             
-            %Preallocations
+            %Preallocation
             eyeClosure = zeros(nTrials,nFrames); %for every individual session
             eyeClosure_baseline = zeros(nTrials,1);
-            fec = zeros(nTrials,nFrames); %fractional; for every individual session
+            fec = zeros(nTrials,nFrames);
             
             %Analyze every trial for FEC
             for trial = startTrial:nTrials
@@ -61,7 +61,7 @@ for mouse = 1:length(mice)
                 %1 - Load the reference image (first image in Trial 1)
                 raw = load([direc 'Mouse' mouseName '/' dataset, ...
                     '/' dataset '_Trial' num2str(trial)]);
-                
+                x
                 for frame = startFrame:nFrames
                     refImage = rgb2gray(raw.raw(:,:,:,frame));
                     
@@ -108,7 +108,7 @@ for mouse = 1:length(mice)
                     end
                 end
                 eyeClosure_baseline(trial) = max(eyeClosure(trial,:));
-                fec(trial,:) = (1 - eyeClosure(trial,:)/eyeClosure_baseline(trial));
+                fec(trial,:) = 1 - (eyeClosure(trial,:)/eyeClosure_baseline(trial));
                 disp('... done')
             end
             
@@ -135,10 +135,39 @@ for mouse = 1:length(mice)
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
                 ylim([0 nTrials+3])
-                set(gca,'yticklabel',[1 60])
-                set(gca,'ytick',[1 60])
+                set(gca,'YTickLabel',[1 60])
+                set(gca,'YTick',[1 60])
                 
                 print(['/Users/ananth/Desktop/figs/fec_' mouseName ...
+                    '_ST' num2str(sessionType) ...
+                    '_S' num2str(session)],...
+                    '-djpeg');
+                
+                figure(5)
+                clf
+                imagesc(fec)
+                colormap(jet)
+                title(['FEC [0: OPEN; 1: CLOSED] - ' ...
+                    mouseName ' ST' num2str(sessionType) ' S' num2str(session) ...
+                    ' (' num2str(samplingRate) ' fps)'],...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                xlabel('Frame Number', ...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                set(gca,'XTick', [10 30 50 ...
+                    70 90 110 130 150])
+                set(gca,'XTickLabel', [10 30 50 ...
+                    70 90 110 130 150])
+                ylabel('Trials', ...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                z = colorbar;
+                ylabel(z,'FEC',...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                
+                print(['/Users/ananth/Desktop/figs/fec_heatmap_' mouseName ...
                     '_ST' num2str(sessionType) ...
                     '_S' num2str(session)],...
                     '-djpeg');

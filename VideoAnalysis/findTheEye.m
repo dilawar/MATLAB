@@ -8,42 +8,42 @@ addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
 %Operations
 saveData = 1;
-playVideo = 0;
-
-%Cropping parameters
-xmin = 125;
-ymin = 54;
-width = 39;
-height = 29;
-crop = [xmin ymin width height]; %[xmin ymin width height]
-fecROI = (20:40);
-
-%Filters
-m = 3; %for median filter
-level = 0.07; %for binarization
-
-%Contrast adjustment parameters
-low_in = 0;
-high_in = 0.5;
-low_out = 0;
-high_out = 1;
+playVideo = 1;
 
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-mice = 1;
-nSessions = 3;
-nTrials = 1;
+mice = 5;
+nSessions = 12;
 
+%Cropping parameters
+xmin = 126;
+ymin = 57;
+width = 39;
+height = 29;
+crop = [xmin ymin width height]; %[xmin ymin width height]
+fecROI = (20:39);
+
+%Filters
+m = 3; %for median filter
+level = 0.01; %for binarization
+
+%Contrast adjustment parameters
+low_in = 0;
+high_in = 0.1;
+low_out = 0;
+high_out = 1;
+
+nTrials = 1;
 startSession = nSessions;
 startTrial = 1;
-startFrame = 1;
+startFrame = 35;
 
 %Video details
-samplingRate = 100.5; % in Frames Per Second (FPS)
+samplingRate = 100; % in Frames Per Second (FPS)
 trialDuration = 1.5; % in seconds
-nFrames = floor(samplingRate*trialDuration); %per trial
-%nFrames = 110;
+%nFrames = floor(samplingRate*trialDuration); %per trial
+nFrames = 110;
 
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/ImageProcess/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';

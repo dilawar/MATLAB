@@ -14,14 +14,14 @@ addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 sortVideos = 1;
 playVideos = 0;
 
-singleVideo = 0; %Does the session have only one video or several?
+singleVideo = 0; %Does the session have only one video (1) or several (0)?
 
 %Dataset details
-mice = [1 2 3 4 5];
-%mice = 1;
-%mice = [2 3 4 5];
+%mice = [1 2 3 4 5];
+mice = 1;
+%mice = [3 4];
 sessionType = 9;
-nSessions = 9;
+nSessions = 13;
 nTrials = 61;
 
 %Video details
@@ -30,10 +30,10 @@ width = 300;
 samplingRate = 100; % in Frames Per Second (fps)
 trialDuration = 2; % in seconds
 nFrames = samplingRate*trialDuration; %per trial
-
+%nFrames = 199;
 startSession = nSessions; %single sessions
 %startSession = 1;
-startTrial = 2; % The first trial is only a dummy
+startTrial = 1; % The first trial is only a dummy
 
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 direc = '/Users/ananth/Desktop/Work/Behaviour/Videos/';
@@ -59,8 +59,8 @@ for mouse = 1:length(mice)
                 video = VideoReader(fileName);
                 for trial = startTrial:nTrials
                     %beep;
-                    disp(['Trial ' num2str(trial-1)]);
-                    raw = read(video,[((trial-1)*nFrames+1) (((trial-1)*nFrames+1)+(nFrames-1))]);
+                    disp(['Trial ' num2str(trial)]);
+                    raw = read(video,[((trial)*nFrames+1) (((trial-1)*nFrames+1)+(nFrames-1))]);
                     save([saveFolder, dataset, '_Trial' num2str(trial-1)],'raw') % for every trial, independently
                     disp('... done')
                 end
@@ -69,13 +69,13 @@ for mouse = 1:length(mice)
             else
                 for trial = startTrial:nTrials
                     %beep;
-                    disp(['Trial ' num2str(trial-1)]);
+                    disp(['Trial ' num2str(trial)]);
                     fileName = [direc 'Mouse' mouseName '/' dataset '/Trial' num2str(trial) '.avi']; %post ffmpeg conversion
                     %disp(fileName);
                     try
                         video = VideoReader(fileName);
                         raw = read(video,[1 nFrames]);
-                        save([saveFolder, dataset, '_Trial' num2str(trial-1)],'raw') % for every trial, independently
+                        save([saveFolder, dataset, '_Trial' num2str(trial)],'raw') % for every trial, independently
                         disp('... done')
                     catch
                         disp(['[ERROR] ' dataset ' Trial ' num2str(trial) ' not found!'])
