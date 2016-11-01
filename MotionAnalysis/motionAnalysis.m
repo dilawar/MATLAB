@@ -13,19 +13,19 @@ clear all
 %close all
 
 %Operations (0 == Don't Perform; 1 == Perform)
-saveData = 0;
+saveData = 1;
 doMotionAnalysis = 1;
-plotFigures = 0;
+plotFigures = 1;
 
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/Motion/';
 direc = '/Users/ananth/Desktop/Work/Behaviour/Motion/';
 
 %Dataset details
 sessionType = 9;
-%mice = [1 2 3 4 5];
-mice = 2;
-nSessions = 1;
-nTrials = 2; % NOTE: The first trial is a dummy
+mice = [1 2 3 4 5];
+%mice = 2;
+nSessions = 12;
+nTrials = 61; % NOTE: The first trial is a dummy
 
 startSession = 1;
 startTrial = 1;
@@ -40,8 +40,8 @@ samplingRate = 100; % Hz
 trialDuration = 1.5; % seconds
 nSamples = floor(samplingRate*trialDuration);
 
-distanceLC = 1; %cm
-timeLC = 0.03; % seconds
+distanceLC = 0.5; %cm
+timeLC = 0.05; % seconds
 threshold = 700;
 
 win4avg = samplingRate*timeLC; % samples
@@ -56,12 +56,10 @@ for mouse = 1:length(mice)
         if doMotionAnalysis == 1
             disp('Performing motion analysis ...')
             
+            % Preallocation
             raw = zeros(nTrials, nSamples);
-            %rawSig = zeros(nTrials,nSamples);
-            %threshold = zeros(nTrials,1);
-            rawTrial = zeros(nSamples,1);
             motion = zeros(nTrials, (nSamples/win4avg));
-            rate = zeros(nTrials, (nSamples/win4avg));
+            rawTrialLowEdge = zeros(nSamples,1);
             
             for trial = startTrial:nTrials
                 disp(['Trial ' num2str(trial-1)])
@@ -72,19 +70,58 @@ for mouse = 1:length(mice)
                     disp(['[ERROR] ' dataset ' Trial ' num2str(trial) ' not found!'])
                     break
                 end
-                raw(trial,:) = rawData(1:nSamples,1); %has only motion values
                 
-                rawTrial = raw(trial,:)>threshold;
+                raw(trial,:) = rawData(1:nSamples,1); % has only motion values
                 
-                %Reshape to get the averaging window
-                rawTrialReshaped = reshape(rawTrial, [win4avg nSamples/win4avg]);
-                diffRawTrialReshaped = diff(rawTrialReshaped');
-                %motion(trial,:) = (sum(rawTrialReshaped))*distanceLC;
-                %rate(trial,:) = motion(trial,:)/timeLC;
-                %velocity(trial,:) = 
+                rawTrial = raw(trial,:)>threshold; % binarize
+                rawTrialDiff = diff(rawTrial); % differential (NOTE: n-1 element output)
+                rawTrialLowEdge(find(rawTrialDiff == -1) + 1) = 1;
+                
+                % Reshape to get the averaging window
+                rawTrialLowEdgeReshaped = reshape(rawTrialLowEdge, [win4avg nSamples/win4avg]);
+                motion(trial,:) = sum(rawTrialLowEdgeReshaped,1)*(distanceLC/timeLC);
                 disp('... done!')
             end
             % Get rid of the dummy trial
+            motion(1,:) = [];
+            
+            if plotFigures == 1
+                figure(1)
+                imagesc(motion)
+                colormap(jet)
+                title(['Treadmill Running ' ...
+                    mouseName ' ST' num2str(sessionType) ' S' num2str(session) ...
+                    ' (' num2str(samplingRate) ' fps)'],...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                xlabel(['Time/' num2str(timeLC*1000) ' ms'], ...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                ylabel('Trials', ...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                z = colorbar;
+                ylabel(z,'Speed (cm/s)',...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                
+                print(['/Users/ananth/Desktop/figs/motion_heatmap_' mouseName ...
+                    '_ST' num2str(sessionType) ...
+                    '_S' num2str(session)],...
+                    '-djpeg');
+            end
+            
+            if saveData == 1
+                saveFolder = [saveDirec 'Mouse' mouseName '/' dataset '/'];
+                if ~isdir(saveFolder)
+                    mkdir(saveFolder);
+                end
+                
+                % Save motion data
+                save([saveFolder 'motion.mat' ], ...
+                    'raw', 'motion', ...
+                    'samplingRate', 'trialDuration')
+            end
         end
     end
 end

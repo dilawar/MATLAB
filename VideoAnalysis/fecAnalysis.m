@@ -16,10 +16,10 @@ plotFigures = 1;
 playVideo = 0;
 
 %Dataset details
-sessionType = 9;
-%mice = [1 2 3 4 5];
-mice = 5;
-nSessions = 12;
+sessionType = 11;
+mice = [2 5];
+%mice = 5;
+nSessions = 3;
 nTrials = 60; % NOTE: During sorting, the dummy trial was excluded
 
 startSession = nSessions; %single sessions
@@ -61,7 +61,6 @@ for mouse = 1:length(mice)
                 %1 - Load the reference image (first image in Trial 1)
                 raw = load([direc 'Mouse' mouseName '/' dataset, ...
                     '/' dataset '_Trial' num2str(trial)]);
-                x
                 for frame = startFrame:nFrames
                     refImage = rgb2gray(raw.raw(:,:,:,frame));
                     
