@@ -1,5 +1,9 @@
 % AUTHOR - Kambadur Ananthamurthy
 % PURPOSE - Read raw .csv files for the treadmill motion data
+% EXPERIMENT SUMMARY - The position of the treadmill is read out every 10 ms
+%                      by point detecting IR reflectance off of a circular
+%                      pattern of black and white squares (0.5 cm side)
+%                      along the periphery.
 
 tic
 clear all
@@ -17,16 +21,19 @@ saveData = 1;
 doMotionAnalysis = 1;
 plotFigures = 1;
 
-saveDirec = '/Users/ananth/Desktop/Work/Analysis/Motion/';
+saveDirec = '/Users/ananth/Desktop/Work/Analysis/MotionAnalysis/';
 direc = '/Users/ananth/Desktop/Work/Behaviour/Motion/';
 
 %Dataset details
 sessionType = 9;
-mice = [1 2 3 4 5];
+%mice = [1 2 3 4 5];
 %mice = 2;
-nSessions = 12;
+mice = [1 3 4];
+%mice = [2 5];
+nSessions = 15;
 nTrials = 61; % NOTE: The first trial is a dummy
 
+%startSession = nSessions;
 startSession = 1;
 startTrial = 1;
 
@@ -57,7 +64,7 @@ for mouse = 1:length(mice)
             disp('Performing motion analysis ...')
             
             % Preallocation
-            raw = zeros(nTrials, nSamples);
+            rawSession = zeros(nTrials, nSamples);
             motion = zeros(nTrials, (nSamples/win4avg));
             rawTrialLowEdge = zeros(nSamples,1);
             
@@ -70,28 +77,28 @@ for mouse = 1:length(mice)
                     disp(['[ERROR] ' dataset ' Trial ' num2str(trial) ' not found!'])
                     break
                 end
-                
-                raw(trial,:) = rawData(1:nSamples,1); % has only motion values
-                
-                rawTrial = raw(trial,:)>threshold; % binarize
-                rawTrialDiff = diff(rawTrial); % differential (NOTE: n-1 element output)
-                rawTrialLowEdge(find(rawTrialDiff == -1) + 1) = 1;
+                rawSession(trial,:) = rawData(1:nSamples,1); % has only motion data
+                rawTrial = rawSession(trial,:)>threshold; % binarize
+                %rawTrialDiff = diff(rawTrial); % differential (NOTE: n-1 element output)
+                %rawTrialLowEdge(find(rawTrialDiff == -1) + 1) = 1;
                 
                 % Reshape to get the averaging window
-                rawTrialLowEdgeReshaped = reshape(rawTrialLowEdge, [win4avg nSamples/win4avg]);
-                motion(trial,:) = sum(rawTrialLowEdgeReshaped,1)*(distanceLC/timeLC);
+                %rawTrialLowEdgeReshaped = reshape(rawTrialLowEdge, [win4avg nSamples/win4avg]);
+                %motion(trial,:) = sum(rawTrialLowEdgeReshaped,1)*(distanceLC/timeLC);
+                rawTrialReshaped = reshape(rawTrial, [win4avg nSamples/win4avg]);
+                motion(trial,:) = mean(rawTrialReshaped,1)*(distanceLC/timeLC);
                 disp('... done!')
             end
             % Get rid of the dummy trial
             motion(1,:) = [];
+            rawSession(1,:) = [];
             
             if plotFigures == 1
                 figure(1)
                 imagesc(motion)
-                colormap(jet)
+                colormap(hot)
                 title(['Treadmill Running ' ...
-                    mouseName ' ST' num2str(sessionType) ' S' num2str(session) ...
-                    ' (' num2str(samplingRate) ' fps)'],...
+                    mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
                 xlabel(['Time/' num2str(timeLC*1000) ' ms'], ...
@@ -109,6 +116,29 @@ for mouse = 1:length(mice)
                     '_ST' num2str(sessionType) ...
                     '_S' num2str(session)],...
                     '-djpeg');
+                
+                figure(2)
+                imagesc(rawSession)
+                colormap(hot)
+                title(['Raw ' ...
+                    mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                xlabel('Samples', ...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                ylabel('Trials', ...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                z = colorbar;
+                ylabel(z,'A.U.',...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+                
+                print(['/Users/ananth/Desktop/figs/runningRaw_heatmap_' mouseName ...
+                    '_ST' num2str(sessionType) ...
+                    '_S' num2str(session)],...
+                    '-djpeg');
             end
             
             if saveData == 1
@@ -119,7 +149,8 @@ for mouse = 1:length(mice)
                 
                 % Save motion data
                 save([saveFolder 'motion.mat' ], ...
-                    'raw', 'motion', ...
+                    'rawSession', 'motion', ...
+                    'threshold', 'distanceLC', 'timeLC', ...
                     'samplingRate', 'trialDuration')
             end
         end
