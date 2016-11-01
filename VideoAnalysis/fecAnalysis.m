@@ -16,10 +16,10 @@ plotFigures = 1;
 playVideo = 0;
 
 %Dataset details
-sessionType = 11;
-mice = [2 5];
+sessionType = 9;
+mice = 5;
 %mice = 5;
-nSessions = 3;
+nSessions = 5;
 nTrials = 60; % NOTE: During sorting, the dummy trial was excluded
 
 startSession = nSessions; %single sessions
@@ -32,6 +32,8 @@ saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 
 fontSize = 12;
+
+%prctileVal = 5;
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
@@ -74,7 +76,8 @@ for mouse = 1:length(mice)
                     croppedImage = imcrop(refImage3,crop);
                     
                     %5 - Binarize
-                    croppedImage2 = im2bw(croppedImage,level);
+                    level = prctile(reshape(croppedImage,1,[]),prctileVal);
+                    croppedImage2 = croppedImage > level; %binarize
                     
                     eyeClosure(trial,frame) = (length(find(~croppedImage2(:,fecROI))))/length(find(croppedImage(:,fecROI)));
                     

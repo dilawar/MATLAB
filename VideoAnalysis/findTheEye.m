@@ -8,29 +8,29 @@ addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
 %Operations
 saveData = 1;
-playVideo = 1;
+playVideo = 0;
 
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-mice = 4;
-nSessions = 15;
+mice = 5;
+nSessions = 5;
 
 %Cropping parameters
-xmin = 129;
-ymin = 58;
+xmin = 127;
+ymin = 49;
 width = 39;
-height = 29;
+height = 39;
 crop = [xmin ymin width height]; %[xmin ymin width height]
-fecROI = (20:39);
+fecROI = 23:24;
 
 %Filters
-m = 3; %for median filter
-level = 0.01; %for binarization
+m = 4; %for median filter
+%level = 0; %for binarization
 
 %Contrast adjustment parameters
 low_in = 0;
-high_in = 0.1;
+high_in = 0.05;
 low_out = 0;
 high_out = 1;
 
@@ -49,6 +49,7 @@ saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/ImageProcess/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 
 fontSize = 12;
+prctileVal = 5;
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
@@ -132,7 +133,8 @@ for mouse = 1:length(mice)
             %croppedImage_new = imcrop(refImage,crop);
             
             %5 - Binarize
-            croppedImage2 = im2bw(croppedImage,level);
+            level = prctile(reshape(croppedImage,1,[]),prctileVal);
+            croppedImage2 = croppedImage > level; %binarize
             
             figure(1)
             subplot(1,3,1)
@@ -211,7 +213,7 @@ for mouse = 1:length(mice)
             %Save FEC curve
             save([saveFolder 'imageProcess.mat' ], ...
                 'low_in', 'high_in', 'low_out', 'high_out',...
-                'crop', 'fecROI', 'm', 'level',...
+                'crop', 'fecROI', 'm', 'prctileVal'...
                 'samplingRate','trialDuration')
         end
     end
