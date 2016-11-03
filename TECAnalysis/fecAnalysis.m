@@ -27,7 +27,7 @@ startTrial = 1; % NOTE: During sorting, the dummy trial was excluded
 startFrame = 1;
 
 imageProcessDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/ImageProcess/';
-direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
+rawDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
 
 fontSize = 12;
@@ -58,7 +58,7 @@ for mouse = 1:length(mice)
             for trial = startTrial:nTrials
                 disp(['Trial ' num2str(trial)])
                 %1 - Load the reference image (first image in Trial 1)
-                raw = load([direc 'Mouse' mouseName '/' dataset, ...
+                raw = load([rawDirec 'Mouse' mouseName '/' dataset, ...
                     '/' dataset '_Trial' num2str(trial)]);
                 for frame = startFrame:nFrames
                     refImage = rgb2gray(raw.raw(:,:,:,frame));

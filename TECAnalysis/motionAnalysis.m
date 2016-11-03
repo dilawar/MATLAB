@@ -17,24 +17,22 @@ clear all
 %close all
 
 %Operations (0 == Don't Perform; 1 == Perform)
-saveData = 1;
+saveData = 0;
 doMotionAnalysis = 1;
-plotFigures = 1;
+plotFigures = 0;
 
-direc = '/Users/ananth/Desktop/Work/Behaviour/Motion/';
+rawDirec = '/Users/ananth/Desktop/Work/Behaviour/Motion/';
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/MotionAnalysis/';
 
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-%mice = 2;
-mice = [1 3 4];
-%mice = [2 5];
-nSessions = 15;
+mice = 2;
+nSessions = 12;
 nTrials = 61; % NOTE: The first trial is a dummy
 
-%startSession = nSessions;
-startSession = 1;
+startSession = nSessions;
+%startSession = 1;
 startTrial = 1;
 
 nHeaderLines = 5;
@@ -67,16 +65,18 @@ for mouse = 1:length(mice)
             rawSession = zeros(nTrials, nSamples);
             motion = zeros(nTrials, (nSamples/win4avg));
             rawTrialLowEdge = zeros(nSamples,1);
+            probeTrials = [];
             
             for trial = startTrial:nTrials
                 disp(['Trial ' num2str(trial-1)])
                 try
-                    fileName = [direc 'Mouse' mouseName '/' dataset '/Trial' num2str(trial) '.csv'];
+                    fileName = [rawDirec 'Mouse' mouseName '/' dataset '/Trial' num2str(trial) '.csv'];
                     rawData = csvread(fileName, nHeaderLines, 0);
                 catch
                     disp(['[ERROR] ' dataset ' Trial ' num2str(trial) ' not found!'])
                     break
                 end
+                
                 rawSession(trial,:) = rawData(1:nSamples,1); % has only motion data
                 rawTrial = rawSession(trial,:)>threshold; % binarize
                 %rawTrialDiff = diff(rawTrial); % differential (NOTE: n-1 element output)
@@ -87,11 +87,26 @@ for mouse = 1:length(mice)
                 %motion(trial,:) = sum(rawTrialLowEdgeReshaped,1)*(distanceLC/timeLC);
                 rawTrialReshaped = reshape(rawTrial, [win4avg nSamples/win4avg]);
                 motion(trial,:) = mean(rawTrialReshaped,1)*(distanceLC/timeLC);
+                
+                % Find probe trials
+                try
+                    if csvread(fileName, nHeaderLines+1, 3, [ nHeaderLines+1 3 nHeaderLines+1 3] ) == 0   %reads only the row after nHeaderLines, column 4
+                        probeTrials = [probeTrials size(blinkData_csPlus,1)];
+                        %disp('Found a probe Trial!')
+                        %disp(probeTrials)
+                    else
+                    end
+                catch
+                    warning('Unable to determine ProbeTrials');
+                end
+                
                 disp('... done!')
             end
+            
             % Get rid of the dummy trial
             motion(1,:) = [];
             rawSession(1,:) = [];
+            probeTrials = probeTrials-1;
             
             if plotFigures == 1
                 figure(1)
@@ -149,7 +164,7 @@ for mouse = 1:length(mice)
                 
                 % Save motion data
                 save([saveFolder 'motion.mat' ], ...
-                    'rawSession', 'motion', ...
+                    'rawSession', 'motion', 'probeTrials', ...
                     'threshold', 'distanceLC', 'timeLC', ...
                     'samplingRate', 'trialDuration')
             end

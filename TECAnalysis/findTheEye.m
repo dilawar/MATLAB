@@ -46,7 +46,7 @@ trialDuration = 1.5; % in seconds
 nFrames = 110;
 
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/ImageProcess/';
-direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
+rawDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 
 fontSize = 12;
 
@@ -61,7 +61,7 @@ for mouse = 1:length(mice)
             disp('Playing Video ...');
             for trial = startTrial:nTrials
                 %1 - Load the reference image (first image in Trial 1)
-                raw = load([direc 'Mouse' mouseName '/' dataset, ...
+                raw = load([rawDirec 'Mouse' mouseName '/' dataset, ...
                     '/' dataset '_Trial' num2str(trial)]);
                 for frame = startFrame:nFrames
                     refImage = rgb2gray(raw.raw(:,:,:,frame));
@@ -118,7 +118,7 @@ for mouse = 1:length(mice)
             end
         else
             %1 - Load the reference image (first image in Trial 1)
-            raw = load([direc 'Mouse' mouseName '/' dataset '/' dataset '_Trial1']);
+            raw = load([rawDirec 'Mouse' mouseName '/' dataset '/' dataset '_Trial1']);
             refImage = rgb2gray(raw.raw(:,:,:,1));
             
             %2 - Adjust contrast
