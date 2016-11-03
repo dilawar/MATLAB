@@ -44,7 +44,6 @@ for session = startSession:nSessions
             load([motionDirec 'Mouse' mouseName '/' dataset '/motion.mat'])
             
             
-            
         end
     end
 end
