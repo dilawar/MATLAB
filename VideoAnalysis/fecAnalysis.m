@@ -9,21 +9,20 @@ clear all
 
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
-%Operations (0 == Don't Perform; 1 == Perform)
+% Operations (0 == Don't Perform; 1 == Perform)
 saveData = 1;
 doFECAnalysis = 1;
 plotFigures = 1;
 playVideo = 0;
 
-%Dataset details
+% Dataset details
 sessionType = 9;
-mice = 5;
-%mice = 5;
-nSessions = 5;
+mice = [1 3 4];
+nSessions = 15;
 nTrials = 60; % NOTE: During sorting, the dummy trial was excluded
 
-startSession = nSessions; %single sessions
-%startSession = 3;
+%startSession = nSessions; %single sessions
+startSession = 5;
 startTrial = 1; % NOTE: During sorting, the dummy trial was excluded
 startFrame = 1;
 
@@ -32,8 +31,6 @@ saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 
 fontSize = 12;
-
-%prctileVal = 5;
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
@@ -45,19 +42,19 @@ for mouse = 1:length(mice)
         if doFECAnalysis == 1
             disp('Performing FEC analysis ...')
             
-            %load image processing parameters
-            load([loadDirec 'Mouse' mouseName '/' dataset '/imageProcess.mat']);
+            % Load image processing parameters
+            load([loadDirec 'Mouse' mouseName '/' dataset '/imageProcess.mat'])
             
-            %Video details
+            % Video details
             nFrames = floor(samplingRate*trialDuration); %per trial
             time = 1:(1*1000/samplingRate):nFrames*1000/samplingRate; % in ms
             
-            %Preallocation
+            % Preallocation
             eyeClosure = zeros(nTrials,nFrames); %for every individual session
             eyeClosure_baseline = zeros(nTrials,1);
             fec = zeros(nTrials,nFrames);
             
-            %Analyze every trial for FEC
+            % Analyze every trial for FEC
             for trial = startTrial:nTrials
                 disp(['Trial ' num2str(trial)])
                 %1 - Load the reference image (first image in Trial 1)
@@ -76,10 +73,9 @@ for mouse = 1:length(mice)
                     croppedImage = imcrop(refImage3,crop);
                     
                     %5 - Binarize
-                    level = prctile(reshape(croppedImage,1,[]),prctileVal);
-                    croppedImage2 = croppedImage > level; %binarize
+                    croppedImage2 = im2bw(croppedImage,level); %binarize
                     
-                    eyeClosure(trial,frame) = (length(find(~croppedImage2(:,fecROI))))/length(find(croppedImage(:,fecROI)));
+                    eyeClosure(trial,frame) = (length(find(~croppedImage2(:,fecROI))))/length(reshape(croppedImage(:,fecROI),1,[]));
                     
                     if playVideo == 1
                         figure(2)
@@ -123,16 +119,18 @@ for mouse = 1:length(mice)
                         'black', 'LineWidth', 2)
                 end
                 axis([0 max(time) 1 nTrials]);
-                title(['FEC [0: OPEN; 1: CLOSED] - ' ...
+                title(['FEC [0: Open; 1: Closed] - ' ...
                     mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
                 xlabel('Time/ms', ...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
-                set(gca,'xtick',[100 300 500 ...
-                    700 900 1100 ...
-                    1300 1500])
+                set(gca,'xtick',[100 200 300 ...
+                    400 500 600 ...
+                    700 800 900 ...
+                    1000 1100 1200 ...
+                    1300 1400 1500])
                 ylabel('Trials', ...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
@@ -140,7 +138,7 @@ for mouse = 1:length(mice)
                 set(gca,'YTickLabel',[1 60])
                 set(gca,'YTick',[1 60])
                 
-                print(['/Users/ananth/Desktop/figs/fec_' mouseName ...
+                print(['/Users/ananth/Desktop/figs/FEC/fec_' mouseName ...
                     '_ST' num2str(sessionType) ...
                     '_S' num2str(session)],...
                     '-djpeg');
@@ -149,23 +147,29 @@ for mouse = 1:length(mice)
                 clf
                 imagesc(fec)
                 colormap(jet)
-                title(['FEC [0: OPEN; 1: CLOSED] - ' ...
+                title(['FEC - ' ...
                     mouseName ' ST' num2str(sessionType) ' S' num2str(session) ...
                     ' (' num2str(samplingRate) ' fps)'],...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
-                xlabel('Frame Number', ...
+                xlabel('Time/ms', ...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
-                set(gca,'XTick', [10 30 50 ...
-                    70 90 110 130 150])
-                set(gca,'XTickLabel', [10 30 50 ...
-                    70 90 110 130 150])
+                set(gca,'XTick', [10 20 30 ...
+                    40 50 60 ...
+                    70 80 90 ...
+                    100 110 120 ...
+                    130 140 150])
+                set(gca,'XTickLabel', [100 200 300 ...
+                    400 500 600 ...
+                    700 800 900 ...
+                    1000 1100 1200 ...
+                    1300 1400 1500])
                 ylabel('Trials', ...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
                 z = colorbar;
-                ylabel(z,'FEC',...
+                ylabel(z,'FEC [0: Open; 1: Closed]',...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
                 
@@ -181,7 +185,7 @@ for mouse = 1:length(mice)
                     mkdir(saveFolder);
                 end
                 
-                %Save FEC curve
+                % Save FEC curve
                 save([saveFolder 'fec.mat' ], ...
                     'eyeClosure', 'fec', ...
                     'low_in', 'high_in', 'low_out', 'high_out',...

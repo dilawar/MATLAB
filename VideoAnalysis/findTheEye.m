@@ -13,31 +13,31 @@ playVideo = 0;
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-mice = 5;
-nSessions = 5;
+mice = 4;
+nSessions = 15;
 
 %Cropping parameters
-xmin = 127;
-ymin = 49;
+xmin = 128;
+ymin = 57;
 width = 39;
-height = 39;
+height = 29;
 crop = [xmin ymin width height]; %[xmin ymin width height]
-fecROI = 23:24;
+fecROI = 24:30;
 
 %Filters
 m = 4; %for median filter
-%level = 0; %for binarization
+level = 0.03; %for binarization
 
 %Contrast adjustment parameters
 low_in = 0;
-high_in = 0.05;
+high_in = 0.1;
 low_out = 0;
 high_out = 1;
 
 nTrials = 1;
 startSession = nSessions;
 startTrial = 1;
-startFrame = 35;
+startFrame = 40;
 
 %Video details
 samplingRate = 100; % in Frames Per Second (FPS)
@@ -49,7 +49,6 @@ saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/ImageProcess/';
 direc = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
 
 fontSize = 12;
-prctileVal = 5;
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
@@ -130,11 +129,10 @@ for mouse = 1:length(mice)
             
             %4 - Crop image
             croppedImage = imcrop(refImage3,crop);
-            %croppedImage_new = imcrop(refImage,crop);
+            croppedImage_original = imcrop(refImage2,crop);
             
             %5 - Binarize
-            level = prctile(reshape(croppedImage,1,[]),prctileVal);
-            croppedImage2 = croppedImage > level; %binarize
+            croppedImage2 = im2bw(croppedImage,level); %binarize
             
             figure(1)
             subplot(1,3,1)
@@ -171,7 +169,7 @@ for mouse = 1:length(mice)
             
             figure(3)
             subplot(1,3,1)
-            imagesc(croppedImage);
+            imagesc(croppedImage_original);
             colormap(hot)
             z = colorbar;
             ylabel(z,'Intensity (A.U.)', ...
@@ -213,7 +211,7 @@ for mouse = 1:length(mice)
             %Save FEC curve
             save([saveFolder 'imageProcess.mat' ], ...
                 'low_in', 'high_in', 'low_out', 'high_out',...
-                'crop', 'fecROI', 'm', 'prctileVal'...
+                'crop', 'fecROI', 'm', 'level',...
                 'samplingRate','trialDuration')
         end
     end
