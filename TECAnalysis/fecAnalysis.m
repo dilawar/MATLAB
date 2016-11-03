@@ -17,12 +17,13 @@ playVideo = 0;
 
 % Dataset details
 sessionType = 9;
-mice = [1 3 4];
-nSessions = 15;
+%mice = [1 3 4];
+mice = 2;
+nSessions = 11;
 nTrials = 60; % NOTE: During sorting, the dummy trial was excluded
 
-%startSession = nSessions; %single sessions
-startSession = 5;
+startSession = nSessions; %single sessions
+%startSession = 5;
 startTrial = 1; % NOTE: During sorting, the dummy trial was excluded
 startFrame = 1;
 

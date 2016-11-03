@@ -13,12 +13,12 @@ playVideo = 0;
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-mice = 4;
-nSessions = 15;
+mice = 2;
+nSessions = 11;
 
 %Cropping parameters
-xmin = 128;
-ymin = 57;
+xmin = 124;
+ymin = 50;
 width = 39;
 height = 29;
 crop = [xmin ymin width height]; %[xmin ymin width height]

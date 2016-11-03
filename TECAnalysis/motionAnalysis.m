@@ -17,7 +17,7 @@ clear all
 %close all
 
 %Operations (0 == Don't Perform; 1 == Perform)
-saveData = 0;
+saveData = 1;
 doMotionAnalysis = 1;
 plotFigures = 0;
 
@@ -25,14 +25,14 @@ rawDirec = '/Users/ananth/Desktop/Work/Behaviour/Motion/';
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/MotionAnalysis/';
 
 %Dataset details
-sessionType = 9;
-%mice = [1 2 3 4 5];
-mice = 2;
-nSessions = 12;
+sessionType = 11;
+mice = [2 5];
+%mice = 2;
+nSessions = 3;
 nTrials = 61; % NOTE: The first trial is a dummy
 
-startSession = nSessions;
-%startSession = 1;
+%startSession = nSessions;
+startSession = 1;
 startTrial = 1;
 
 nHeaderLines = 5;
@@ -46,7 +46,7 @@ trialDuration = 1.5; % seconds
 nSamples = floor(samplingRate*trialDuration);
 
 distanceLC = 0.5; %cm
-timeLC = 0.03; % seconds
+timeLC = 0.05; % seconds
 threshold = 700;
 
 win4avg = samplingRate*timeLC; % samples
@@ -68,7 +68,7 @@ for mouse = 1:length(mice)
             probeTrials = [];
             
             for trial = startTrial:nTrials
-                disp(['Trial ' num2str(trial-1)])
+                disp(['Trial ' num2str(trial)])
                 try
                     fileName = [rawDirec 'Mouse' mouseName '/' dataset '/Trial' num2str(trial) '.csv'];
                     rawData = csvread(fileName, nHeaderLines, 0);
@@ -91,7 +91,7 @@ for mouse = 1:length(mice)
                 % Find probe trials
                 try
                     if csvread(fileName, nHeaderLines+1, 3, [ nHeaderLines+1 3 nHeaderLines+1 3] ) == 0   %reads only the row after nHeaderLines, column 4
-                        probeTrials = [probeTrials size(blinkData_csPlus,1)];
+                        probeTrials = [probeTrials trial];
                         %disp('Found a probe Trial!')
                         %disp(probeTrials)
                     else
@@ -99,7 +99,6 @@ for mouse = 1:length(mice)
                 catch
                     warning('Unable to determine ProbeTrials');
                 end
-                
                 disp('... done!')
             end
             

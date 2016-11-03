@@ -140,7 +140,6 @@ while 1
             [onlyButterworth, fullFiltered] = blinkFilter(myData, samplingRate, lowPassCutoffFreq, highPassCutoffFreq, filterOrder, offset, gain, phaseOffsetFactor, nbins);
             blinkData_butterFiltered(trialNum,1:size(onlyButterworth,2))= onlyButterworth;
             blinkData_fullFiltered(trialNum,(1:size(fullFiltered,2))) = fullFiltered;
-            
         end
         
         %close all
