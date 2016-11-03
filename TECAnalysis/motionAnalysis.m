@@ -9,7 +9,7 @@ tic
 clear all
 %close all
 
-addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
+addpath('/Users/ananth/Documents/MATLAB/CustomFunctions/')
 
 %Please work with the data from all sessions of an animal, before proceeding to the next animal
 
@@ -21,8 +21,8 @@ saveData = 1;
 doMotionAnalysis = 1;
 plotFigures = 1;
 
-saveDirec = '/Users/ananth/Desktop/Work/Analysis/MotionAnalysis/';
 direc = '/Users/ananth/Desktop/Work/Behaviour/Motion/';
+saveDirec = '/Users/ananth/Desktop/Work/Analysis/MotionAnalysis/';
 
 %Dataset details
 sessionType = 9;
@@ -48,7 +48,7 @@ trialDuration = 1.5; % seconds
 nSamples = floor(samplingRate*trialDuration);
 
 distanceLC = 0.5; %cm
-timeLC = 0.05; % seconds
+timeLC = 0.03; % seconds
 threshold = 700;
 
 win4avg = samplingRate*timeLC; % samples

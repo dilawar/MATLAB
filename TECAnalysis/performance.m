@@ -7,7 +7,9 @@
 
 tic
 clear all
-close all
+%close all
+
+addpath('/Users/ananth/Documents/MATLAB/CustomFunctions/')
 
 % Operations (0 == Don't Perform; 1 == Perform)
 saveData = 1;
