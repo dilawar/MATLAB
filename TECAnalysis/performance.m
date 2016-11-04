@@ -25,13 +25,12 @@ else
     nSessions = 3;
 end
 
-score = nan(length(mice), nSessions);
+allScores = nan(length(mice), nSessions);
 
 startSession = 1;
 %startSession = nSessions;
 
 fecDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
-motionDirec = '/Users/ananth/Desktop/Work/Analysis/MotionAnalysis/';
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/PerformanceAnalysis/';
 
 % Protocol details
@@ -39,12 +38,12 @@ preCSTime = 0.5; % in seconds
 csTime = 0.05; % in seconds
 usTime = 0.05; % in seconds
 
-alpha = 0.05; % Significance level for kstest2
-trialRejectThreshold = 0.1; % Fano's Factor based rejection
+alpha = 0.01; % Significance level for kstest2
+trialRejectThreshold = 0.05; % Fano's Factor based rejection
 
 learningCutoff = 50; % in percent
 
-percentDisqualified = nan(length(mice),nSessions);
+allDisqualified = nan(length(mice),nSessions);
 
 fontSize = 12;
 lineWidth = 3;
@@ -52,6 +51,10 @@ markerSize = 8;
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
+    
+    score = zeros(nSessions,1);
+    disqualifications = zeros(nSessions,1);
+    
     for session = startSession:nSessions
         dataset = ['Mouse' mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
         disp(['Working on ' dataset])
@@ -75,9 +78,9 @@ for mouse = 1:length(mice)
             end
             
             nTrials = size(fec,1);
-            hitTrials = zeros(nTrials,1);
-            fanoFactor = zeros(nTrials,1);
-            nRejects = 0;
+            fanoFactor = zeros(nTrials,2);
+            hitTrials = [];
+            rejectedTrials = [];
             
             doi = samplingRate*traceTime; % length of the duration of interest
             csON = samplingRate*preCSTime;
@@ -88,15 +91,24 @@ for mouse = 1:length(mice)
                 x2 = fec(trial,(csOFF+1):(csOFF+doi)); % trace period
                 
                 % Disqualifications (if any) based on Fano's factor
-                fanoFactor(trial) = var(x1)/mean(x1);
-                if fanoFactor(trial) > trialRejectThreshold
-                    hitTrials(trial,1) = 0;
-                    hitTrials(trial,2) = nan;
-                    nRejects = nRejects+1;
+                fanoFactor(trial,1) = var(x1)/mean(x1);
+                fanoFactor(trial,2) = var(x2)/mean(x2);
+                
+                if fanoFactor(trial,1) > trialRejectThreshold
+                    reject = 1;
+                    rejectedTrials = [rejectedTrials trial];
                     disp(['Trial ' num2str(trial) ' rejected'])
+                    hit = 0;
                 else
-                    hitTrials(trial) = kstest2(x1, x2, 'Alpha', alpha);
+                    reject = 0;
+                    hit = kstest2(x1, x2, 'Alpha', alpha);
+                    if hit == 1
+                        hitTrials = [hitTrials trial];
+                    end
                 end
+                
+                nHits = length(hitTrials);
+                nRejects = length(rejectedTrials);
                 
                 if saveData == 1
                     saveFolder = [saveDirec 'Mouse' mouseName '/' dataset '/'];
@@ -106,26 +118,31 @@ for mouse = 1:length(mice)
                     
                     % trialInfo
                     save([saveFolder 'Trial' num2str(trial) '.mat' ], ...
-                        'fanoFactor',...
-                        'hitTrials',...
-                        'nRejects')
+                        'fanoFactor', 'reject', ...
+                        'hit')
                 end
             end
-            score(mouse,session) = (sum(hitTrials(:,1))/(nTrials-nRejects))*100; % in percentage
-            percentDisqualified(mouse,session) = (nRejects/nTrials)*100;
+            sessionScore = (nHits/(nTrials-nRejects))*100; % in percentage
+            percentDisqualified = (nRejects/nTrials)*100;
         end
+        if saveData == 1
+            % session info
+            save([saveFolder 'Session' num2str(session) '.mat'], ...
+                'sessionScore', ...
+                'alpha', 'hitTrials', ...
+                'fanoFactor', 'trialRejectThreshold', 'rejectedTrials')
+        end
+        allScores(mouse,session) = sessionScore;
+        allDisqualified(mouse,session) = percentDisqualified;
     end
     
     if saveData == 1
-        %     saveFolder = saveDirec;
-        %     if ~isdir(saveFolder)
-        %         mkdir(saveFolder);
-        %     end
         
-        % Save FEC curve
-        save([saveDirec 'sessionPerformance.mat'],...
-            'alpha',...
-            'trialRejectThreshold', 'percentDisqualified')
+        % all scores
+        save([saveDirec 'allScores.mat'], ...
+            'allScores', ...
+            'alpha', ...
+            'trialRejectThreshold', 'allDisqualified')
     end
     
     if plotFigures == 1
@@ -151,20 +168,20 @@ for mouse = 1:length(mice)
             %             'FontWeight', 'bold')
         end
         hold on
-        plot(score(mouse,:),'-*',...
+        plot(allScores(mouse,:),'-*',...
             'LineWidth',lineWidth,...
             'MarkerSize',markerSize)
         xlabel('Sessions', ...
             'FontSize', fontSize,...
             'FontWeight', 'bold')
-        axis([1 nSessions 0 100]);
+        axis([1 nSessions -5 100]);
         if mouse == length(mice)
             hold on
             plot(learningLine*learningCutoff,'--black')
             legend('M1', 'M2', 'M3', 'M4', 'M5', 'Learnt') % Later, make this a cell array
         end
         
-        print('/Users/ananth/Desktop/figs/performance',...
+        print('/Users/ananth/Desktop/figs/scores',...
             '-djpeg');
         
         figure(2)
@@ -188,18 +205,18 @@ for mouse = 1:length(mice)
             %             'FontWeight', 'bold')
         end
         hold on
-        plot(percentDisqualified(mouse,:), '-*', ...
+        plot(allDisqualified(mouse,:), '-*', ...
             'LineWidth', lineWidth, ...
             'MarkerSize', markerSize)
         xlabel('Sessions', ...
             'FontSize', fontSize,...
             'FontWeight', 'bold')
-        axis([1 nSessions 0 10]);
-        set(gca,'YTick', [0 5 10])
-        set(gca,'YTickLabel',[0 5 10])
+%         axis([1 nSessions 0 10]);
+%         set(gca,'YTick', [0 5 10])
+%         set(gca,'YTickLabel',[0 5 10])
         legend('M1', 'M2', 'M3', 'M4', 'M5') % Later, make this a cell array
         
-        print('/Users/ananth/Desktop/figs/disqualifiedTrials',...
+        print('/Users/ananth/Desktop/figs/disqualifications',...
             '-djpeg');
     end
 end

@@ -1,5 +1,5 @@
 % AUTHOR - Kambadur Ananthamurthy
-% PURPOSE - CR Timing - between animals
+% PURPOSE - CR Timing - across sessions
 % DEPENDENCIES - 1) Sort all trials as .mat files using sortingVideos.m
 %                2) Find the image processing parameters using findTheEye.m
 %                3) Perform FEC analysis
@@ -19,12 +19,12 @@ plotFigures = 1;
 % Dataset details
 sessionType = 11;
 %mice = [1 2 3 4 5];
-mice = [2 5];
+mice = 2;
 
 nSessions = 3;
 
-%startSession = 1;
-startSession = nSessions;
+startSession = 1;
+%startSession = nSessions;
 
 fecDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
 motionDirec = '/Users/ananth/Desktop/Work/Analysis/MotionAnalysis/';
@@ -96,8 +96,11 @@ for mouse = 1:length(mice)
             % Collect all hit Trials
             crTrials(:,:) = fec(hitTrials,:);
             
-            stdDev(mouse,:) = std(crTrials,1);
-            meanCR(mouse,:) = mean(crTrials,1);
+            stdDevCRAmp(mouse,:) = std(crTrials,1);
+            meanCRAmp(mouse,:) = mean(crTrials,1);
+            
+            stdDevCRTime(mouse,:) = std(crTrials,1);
+            meanCRTime(mouse,:) = mean(crTrials,1);
             
         end
         
@@ -116,7 +119,7 @@ end
 if plotFigures == 1
     lineProps1.col{1} = 'red';
     lineProps2.col{1} = 'blue';
-    %     lineProps3.col{1} = 'green';
+    lineProps3.col{1} = 'green';
     %     lineProps4.col{1} = 'black';
     
     figure(1)
@@ -126,7 +129,7 @@ if plotFigures == 1
     %                 {'LineWidth', lineWidth});
     mseb([],meanCR(1,:),stdDev(1,:), ...
         lineProps1, transparency);
-    mseb([],meanCR(2,:),stdDev(mouse,:), ...
+    mseb([],meanCR(1,:),stdDev(mouse,:), ...
         lineProps2, transparency);
     axis([0 150 0 1.2])
     if sessionType == 9
@@ -149,7 +152,7 @@ if plotFigures == 1
         'FontWeight', 'bold')
     set(gca,'YTick', [0 0.5 1])
     set(gca,'YTickLabel', [0 0.5 1])
-    legend('mean M2 (errorbar: SD)','mean M5 (errorbar: SD)')
+    legend('mean M2 (errorbar: SD) Session 1','mean M5 (errorbar: SD) Session 2', 'mean M5 (errorbar: SD) Session 3')
     
     subplot(6,1,6)
     plot(csLine,'-','LineWidth',lineWidth)
