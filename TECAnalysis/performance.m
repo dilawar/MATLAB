@@ -19,7 +19,12 @@ plotFigures = 1;
 sessionType = 11;
 mice = [1 2 3 4 5];
 %mice = 5;
-nSessions = 3;
+if sessionType == 9
+    nSessions = 12;
+else
+    nSessions = 3;
+end
+
 score = nan(length(mice), nSessions);
 
 startSession = 1;
@@ -34,10 +39,16 @@ preCSTime = 0.5; % in seconds
 csTime = 0.05; % in seconds
 usTime = 0.05; % in seconds
 
-fontSize = 12;
-
 alpha = 0.05; % Significance level for kstest2
 trialRejectThreshold = 0.1; % Fano's Factor based rejection
+
+learningCutoff = 50; % in percent
+
+percentDisqualified = nan(length(mice),nSessions);
+
+fontSize = 12;
+lineWidth = 3;
+markerSize = 8;
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
@@ -86,63 +97,111 @@ for mouse = 1:length(mice)
                 else
                     hitTrials(trial) = kstest2(x1, x2, 'Alpha', alpha);
                 end
+                
+                if saveData == 1
+                    saveFolder = [saveDirec 'Mouse' mouseName '/' dataset '/'];
+                    if ~isdir(saveFolder)
+                        mkdir(saveFolder);
+                    end
+                    
+                    % trialInfo
+                    save([saveFolder 'Trial' num2str(trial) '.mat' ], ...
+                        'fanoFactor',...
+                        'hitTrials',...
+                        'nRejects')
+                end
             end
             score(mouse,session) = (sum(hitTrials(:,1))/(nTrials-nRejects))*100; % in percentage
+            percentDisqualified(mouse,session) = (nRejects/nTrials)*100;
         end
+    end
+    
+    if saveData == 1
+        %     saveFolder = saveDirec;
+        %     if ~isdir(saveFolder)
+        %         mkdir(saveFolder);
+        %     end
         
-        if saveData == 1
-            saveFolder = saveDirec;
-            if ~isdir(saveFolder)
-                mkdir(saveFolder);
-            end
-            
-            % trialInfo
-            save([saveFolder 'Trial' num2str(trial) '.mat' ], ...
-                'fanoFactor',...
-                'hitTrials')
-        end
+        % Save FEC curve
+        save([saveDirec 'sessionPerformance.mat'],...
+            'alpha',...
+            'trialRejectThreshold', 'percentDisqualified')
     end
     
     if plotFigures == 1
+        learningLine = ones(nSessions,1);
         figure(1)
-        %subplot(1,5,1:4)
-        %subplot(1,5,5)
-        hold on
-        plot(score(mouse,:),'-*',...
-            'LineWidth',3,...
-            'MarkerSize',10)
         if sessionType == 9
-            title('250 ms ISI', ...
+            subplot(1,5,1:4)
+            title('Performance - 250 ms ISI', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
+            ylabel('Hit Trials/Total Trials (%)',...
+                'FontSize', fontSize,...
+                'FontWeight', 'bold')
+            %legend('M1', 'M2', 'M3', 'M4', 'M5', 'Learning') % Later, make this a cell array
         else
+            subplot(1,5,5)
             title('350 ms ISI', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
+            %             legend('M1', 'M2', 'M3', 'M4', 'M5', 'Learning') % Later, make this a cell array
+            %             ylabel('Performance (%)',...
+            %             'FontSize', fontSize,...
+            %             'FontWeight', 'bold')
         end
+        hold on
+        plot(score(mouse,:),'-*',...
+            'LineWidth',lineWidth,...
+            'MarkerSize',markerSize)
         xlabel('Sessions', ...
             'FontSize', fontSize,...
             'FontWeight', 'bold')
-        ylabel('Performance (%)',...
-            'FontSize', fontSize,...
-            'FontWeight', 'bold')
         axis([1 nSessions 0 100]);
-        legend('M1', 'M2', 'M3', 'M4', 'M5') % Later, make this a cell array
+        if mouse == length(mice)
+            hold on
+            plot(learningLine*learningCutoff,'--black')
+            legend('M1', 'M2', 'M3', 'M4', 'M5', 'Learnt') % Later, make this a cell array
+        end
         
         print('/Users/ananth/Desktop/figs/performance',...
             '-djpeg');
+        
+        figure(2)
+        if sessionType == 9
+            subplot(1,5,1:4)
+            title('Disqualifications - 250 ms ISI', ...
+                'FontSize', fontSize, ...
+                'FontWeight', 'bold')
+            ylabel('Disqualified Trials/Total Trials (%)',...
+                'FontSize', fontSize,...
+                'FontWeight', 'bold')
+            %legend('M1', 'M2', 'M3', 'M4', 'M5', 'Learning') % Later, make this a cell array
+        else
+            subplot(1,5,5)
+            title('350 ms ISI', ...
+                'FontSize', fontSize, ...
+                'FontWeight', 'bold')
+            %             legend('M1', 'M2', 'M3', 'M4', 'M5', 'Learning') % Later, make this a cell array
+            %             ylabel('Performance (%)',...
+            %             'FontSize', fontSize,...
+            %             'FontWeight', 'bold')
+        end
+        hold on
+        plot(percentDisqualified(mouse,:), '-*', ...
+            'LineWidth', lineWidth, ...
+            'MarkerSize', markerSize)
+        xlabel('Sessions', ...
+            'FontSize', fontSize,...
+            'FontWeight', 'bold')
+        axis([1 nSessions 0 10]);
+        set(gca,'YTick', [0 5 10])
+        set(gca,'YTickLabel',[0 5 10])
+        legend('M1', 'M2', 'M3', 'M4', 'M5') % Later, make this a cell array
+        
+        print('/Users/ananth/Desktop/figs/disqualifiedTrials',...
+            '-djpeg');
     end
-end
-if saveData == 1
-    saveFolder = saveDirec;
-    if ~isdir(saveFolder)
-        mkdir(saveFolder);
-    end
-    
-    % Save FEC curve
-    save([saveFolder 'sessionPerformance.mat'],...
-        'alpha',...
-        'trialRejectThreshold')
 end
 toc
 disp('All done!')
