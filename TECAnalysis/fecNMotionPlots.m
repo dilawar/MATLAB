@@ -12,7 +12,7 @@ startSession = 1;
 %saveDirec = '/Users/ananth/Desktop/Work/Analysis/Motion/';
 direc = '/Users/ananth/Desktop/Work/Analysis/';
 
-fontSize = 12;
+fontSize = 16;
 
 for session = startSession:nSessions
     count = 1;
@@ -61,6 +61,7 @@ for session = startSession:nSessions
         ylabel(z,'FEC',...
             'FontSize', fontSize,...
             'FontWeight', 'bold')
+        set(gca,'FontSize', fontSize)
         
         subplot(length(mice),2,count+1)
         imagesc(motion)
@@ -79,6 +80,7 @@ for session = startSession:nSessions
         ylabel(z,'Speed (cm/s)',...
             'FontSize', fontSize,...
             'FontWeight', 'bold')
+        set(gca,'FontSize', fontSize)
         
         count = count+2;
     end

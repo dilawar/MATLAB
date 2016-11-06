@@ -17,27 +17,25 @@ clear all
 %close all
 
 %Operations (0 == Don't Perform; 1 == Perform)
-saveData = 1;
-doMotionAnalysis = 1;
-plotFigures = 0;
+saveData = 0;
+doMotionAnalysis = 0;
+plotFigures = 1;
 
 rawDirec = '/Users/ananth/Desktop/Work/Behaviour/Motion/';
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/MotionAnalysis/';
 
 %Dataset details
-sessionType = 11;
-mice = [2 5];
-%mice = 2;
-nSessions = 3;
+sessionType = 9;
+%mice = [2 3 5];
+mice = 2;
+nSessions = 12;
 nTrials = 61; % NOTE: The first trial is a dummy
 
-%startSession = nSessions;
-startSession = 1;
+startSession = nSessions;
+%startSession = 1;
 startTrial = 1;
 
 nHeaderLines = 5;
-
-fontSize = 12;
 
 dataSize = zeros(nTrials,1);
 
@@ -50,6 +48,21 @@ timeLC = 0.05; % seconds
 threshold = 700;
 
 win4avg = samplingRate*timeLC; % samples
+
+fontSize = 20;
+lineWidth = 3;
+markerWidth = 7;
+
+timeLine = zeros(150,1);
+csLine = timeLine;
+usLine = timeLine;
+
+csLine(50:55,1) = 1;
+if sessionType == 9
+    usLine(80:85) = 1;
+else
+    usLine(90:95) = 1;
+end
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
@@ -106,69 +119,181 @@ for mouse = 1:length(mice)
             motion(1,:) = [];
             rawSession(1,:) = [];
             probeTrials = probeTrials-1;
-            
-            if plotFigures == 1
-                figure(1)
-                imagesc(motion)
-                colormap(hot)
-                title(['Treadmill Running ' ...
-                    mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
+        else
+            load([saveDirec 'Mouse' mouseName '/' dataset '/motion.mat']);
+        end
+        
+        if plotFigures == 1
+            figure(1)
+            clf
+            subplot(9,9,1:72)
+            imagesc(motion)
+            colormap(hot)
+            if sessionType == 9
+                title(['Treadmill Running - 250 ms ISI - ' ...
+                    mouseName ' S' num2str(session)],...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
-                xlabel(['Time/' num2str(timeLC*1000) ' ms'], ...
+            else
+                title(['Treadmill Running - 350 ms ISI - ' ...
+                    mouseName ' S' num2str(session)],...
                     'FontSize', fontSize,...
                     'FontWeight', 'bold')
-                ylabel('Trials', ...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                z = colorbar;
-                ylabel(z,'Speed (cm/s)',...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                
-                print(['/Users/ananth/Desktop/figs/motion_heatmap_' mouseName ...
-                    '_ST' num2str(sessionType) ...
-                    '_S' num2str(session)],...
-                    '-djpeg');
-                
-                figure(2)
-                imagesc(rawSession)
-                colormap(hot)
-                title(['Raw ' ...
-                    mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                xlabel('Samples', ...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                ylabel('Trials', ...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                z = colorbar;
-                ylabel(z,'A.U.',...
-                    'FontSize', fontSize,...
-                    'FontWeight', 'bold')
-                
-                print(['/Users/ananth/Desktop/figs/Motion/runningRaw_heatmap_' mouseName ...
-                    '_ST' num2str(sessionType) ...
-                    '_S' num2str(session)],...
-                    '-djpeg');
             end
+            %             title('Weak Learner - Treadmill Running - Session 12',...
+            %                 'FontSize', fontSize,...
+            %                 'FontWeight','bold')
+            %             xlabel(['Time/' num2str(timeLC*1000) ' ms'], ...
+            %                 'FontSize', fontSize,...
+            %                 'FontWeight', 'bold')
+            set(gca,'XTick',[])
+            set(gca,'XTickLabel',[])
+            ylabel('Trials', ...
+                'FontSize', fontSize,...
+                'FontWeight', 'bold')
+            z = colorbar;
+            ylabel(z,'Speed*s/cm',...
+                'FontSize', fontSize,...
+                'FontWeight', 'bold')
+            set(gca,'FontSize', fontSize)
             
-            if saveData == 1
-                saveFolder = [saveDirec 'Mouse' mouseName '/' dataset '/'];
-                if ~isdir(saveFolder)
-                    mkdir(saveFolder);
+            subplot(9,9,73:80)
+            plot(csLine,'-','LineWidth',lineWidth)
+            hold on
+            plot(usLine,'-','LineWidth',lineWidth)
+            legend('CS','US')
+            set(gca,'FontSize', fontSize-2)
+            set(gca,'YTick',[0 1])
+            set(gca, 'YTickLabel', {'Off' 'On'})
+            xlabel('Time/ms', ...
+                'FontSize', fontSize,...
+                'FontWeight', 'bold')
+            set(gca,'XTick', [10 30 50 ...
+                70 90 110 ...
+                130 150])
+            set(gca,'XTickLabel', [100 300 500 ...
+                700 900 1100 ...
+                1300 1500])
+            if sessionType == 9
+                if mice(mouse) == 5
+                    print('/Users/ananth/Desktop/figs/motion_weakLearner', ...
+                        '-dpng');
+                elseif mice(mouse) == 3
+                    print('/Users/ananth/Desktop/figs/motion_nonLearner', ...
+                        '-dpng');
+                elseif mice(mouse) == 2
+                    print('/Users/ananth/Desktop/figs/motion_strongLearner', ...
+                        '-dpng');
+                else
+                    disp('[ERROR] Figures not saved!')
                 end
-                
-                % Save motion data
-                save([saveFolder 'motion.mat' ], ...
-                    'rawSession', 'motion', 'probeTrials', ...
-                    'threshold', 'distanceLC', 'timeLC', ...
-                    'samplingRate', 'trialDuration')
+            else
+                print('/Users/ananth/Desktop/figs/motion_350', ...
+                    '-dpng');
             end
+            
+            %             print(['/Users/ananth/Desktop/figs/motion_heatmap_' mouseName ...
+            %                 '_ST' num2str(sessionType) ...
+            %                 '_S' num2str(session)],...
+            %                 '-djpeg');
+            
+            trialAvgMotion = mean(motion,2);
+            trialAvgMotion_stddev = (std(motion'))'; %will fix this soon
+            
+            figure(2)
+            clf
+            subplot(9,1,1:8)
+            plot(trialAvgMotion')
+            shadedErrorBar([],trialAvgMotion,trialAvgMotion_stddev, ...
+                {'red', 'LineWidth', lineWidth});
+            ylabel('Average Speed *s/cm', ...
+                'FontSize', fontSize, ...
+                'FontWeight', 'bold')
+            xlabel('Trials', ...
+                'FontSize', fontSize, ...
+                'FontWeight', 'bold')
+            %colormap(hot)
+            if sessionType == 9
+                title(['Average Trial Speed - 250 ms ISI - ', ...
+                    mouseName ' S' num2str(session)],...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+            else
+                title(['Average Trial Speed - 350 ms ISI - ', ...
+                    mouseName ' S' num2str(session)],...
+                    'FontSize', fontSize,...
+                    'FontWeight', 'bold')
+            end
+            %axis([1 60 -1.5 10])
+            set(gca,'XTick',[10 20 30 40 50 60])
+            set(gca,'XTickLabel',[10 20 30 40 50 60])
+            set(gca,'YTick',[0 5 10])
+            set(gca,'YTickLabel',[0 5 10])
+            %             z = colorbar;
+            %             ylabel(z,'Speed (cm/s)',...
+            %                 'FontSize', fontSize,...
+            %                 'FontWeight', 'bold')
+            %             set(gca,'FontSize', fontSize)
+            view(90,-90) % flip plot
+            set(gca, 'xdir', 'reverse'); %# Reverse the x-axis
+            set(gca, 'FontSize', fontSize-2)
+            if sessionType == 9
+                if mice(mouse) == 5
+                    print('/Users/ananth/Desktop/figs/avgMotion_weakLearner', ...
+                        '-dpng');
+                elseif mice(mouse) == 3
+                    print('/Users/ananth/Desktop/figs/avgMotion_nonLearner', ...
+                        '-dpng');
+                elseif mice(mouse) == 2
+                    print('/Users/ananth/Desktop/figs/avgMotion_strongLearner', ...
+                        '-dpng');
+                end
+            else
+                print('/Users/ananth/Desktop/figs/avgMotion_350', ...
+                    '-dpng');
+            end
+            
+            
+            %             figure(3)
+            %             imagesc(rawSession)
+            %             colormap(hot)
+            %             title(['Raw ' ...
+            %                 mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
+            %                 'FontSize', fontSize,...
+            %                 'FontWeight', 'bold')
+            %             xlabel('Samples', ...
+            %                 'FontSize', fontSize,...
+            %                 'FontWeight', 'bold')
+            %             ylabel('Trials', ...
+            %                 'FontSize', fontSize,...
+            %                 'FontWeight', 'bold')
+            %             z = colorbar;
+            %             ylabel(z,'A.U.',...
+            %                 'FontSize', fontSize,...
+            %                 'FontWeight', 'bold')
+            %             set(gca,'FontSize', fontSize)
+            %
+            %             print(['/Users/ananth/Desktop/figs/Motion/runningRaw_heatmap_' mouseName ...
+            %                 '_ST' num2str(sessionType) ...
+            %                 '_S' num2str(session)],...
+            %                 '-djpeg');
+        end
+        
+        if saveData == 1
+            saveFolder = [saveDirec 'Mouse' mouseName '/' dataset '/'];
+            if ~isdir(saveFolder)
+                mkdir(saveFolder);
+            end
+            
+            % Save motion data
+            save([saveFolder 'motion.mat' ], ...
+                'rawSession', 'motion', 'probeTrials', ...
+                'threshold', 'distanceLC', 'timeLC', ...
+                'samplingRate', 'trialDuration')
         end
     end
+    pause(0.5)
 end
 toc
+beep
 disp('All done!')

@@ -11,14 +11,15 @@ clear all
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions/')
 
 % Operations (0 == Don't Perform; 1 == Perform)
-saveData = 1;
+saveData = 0;
 scorePerformance = 1;
 plotFigures = 1;
 
 % Dataset details
 sessionType = 11;
 mice = [1 2 3 4 5];
-%mice = 5;
+%mice = 2;
+%nSessions = 4;
 if sessionType == 9
     nSessions = 12;
 else
@@ -42,18 +43,19 @@ alpha = 0.01; % Significance level for kstest2
 trialRejectThreshold = 0.05; % Fano's Factor based rejection
 
 learningCutoff = 50; % in percent
+disqualificationCutoff = 50; % in percent
 
 allDisqualified = nan(length(mice),nSessions);
 
-fontSize = 12;
+fontSize = 20;
 lineWidth = 3;
 markerSize = 8;
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
     
-    score = zeros(nSessions,1);
-    disqualifications = zeros(nSessions,1);
+    score = nan(nSessions,1);
+    disqualifications = nan(nSessions,1);
     
     for session = startSession:nSessions
         dataset = ['Mouse' mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
@@ -122,8 +124,13 @@ for mouse = 1:length(mice)
                         'hit')
                 end
             end
-            sessionScore = (nHits/(nTrials-nRejects))*100; % in percentage
+            
             percentDisqualified = (nRejects/nTrials)*100;
+            if percentDisqualified >= disqualificationCutoff
+                sessionScore = nan;
+            else
+                sessionScore = (nHits/(nTrials-nRejects))*100; % in percentage
+            end
         end
         if saveData == 1
             % session info
@@ -147,6 +154,7 @@ for mouse = 1:length(mice)
     
     if plotFigures == 1
         learningLine = ones(nSessions,1);
+        disqualifyLine = ones(nSessions,1);
         figure(1)
         if sessionType == 9
             subplot(1,5,1:4)
@@ -175,14 +183,15 @@ for mouse = 1:length(mice)
             'FontSize', fontSize,...
             'FontWeight', 'bold')
         axis([1 nSessions -5 100]);
+        set(gca,'FontSize', fontSize)
         if mouse == length(mice)
             hold on
             plot(learningLine*learningCutoff,'--black')
-            legend('M1', 'M2', 'M3', 'M4', 'M5', 'Learnt') % Later, make this a cell array
+            %legend('M1', 'M2', 'M3', 'M4', 'M5', 'Learnt') % Later, make this a cell array
         end
         
         print('/Users/ananth/Desktop/figs/scores',...
-            '-djpeg');
+            '-dpng');
         
         figure(2)
         if sessionType == 9
@@ -211,13 +220,18 @@ for mouse = 1:length(mice)
         xlabel('Sessions', ...
             'FontSize', fontSize,...
             'FontWeight', 'bold')
-%         axis([1 nSessions 0 10]);
-%         set(gca,'YTick', [0 5 10])
-%         set(gca,'YTickLabel',[0 5 10])
-        legend('M1', 'M2', 'M3', 'M4', 'M5') % Later, make this a cell array
+        set(gca,'FontSize', fontSize)
+        axis([1 nSessions 0 100]);
+        set(gca,'YTick', [0 25 50 75 100])
+        set(gca,'YTickLabel',[0 25 50 75 100])
+        if mouse == length(mice)
+            hold on
+            plot(disqualifyLine*disqualificationCutoff,'--black')
+            %legend('M1', 'M2', 'M3', 'M4', 'M5', 'Disqualified') % Later, make this a cell array
+        end
         
         print('/Users/ananth/Desktop/figs/disqualifications',...
-            '-djpeg');
+            '-dpng');
     end
 end
 toc
