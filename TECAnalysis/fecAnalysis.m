@@ -1,7 +1,6 @@
 % AUTHOR - Kambadur Ananthamurthy
 % PURPOSE - FEC analysis
-% DEPENDENCIES - 1) Sort all trials as .mat files using sortingVideos.m
-%                2) Find the image processing parameters using findTheEye.m
+% DEPENDENCIES - Find the image processing parameters using findTheEye.m
 
 tic
 clear all
@@ -10,291 +9,310 @@ clear all
 addpath('/Users/ananth/Documents/MATLAB/CustomFunctions')
 
 % Operations (0 == Don't Perform; 1 == Perform)
-saveData = 0;
-doFECAnalysis = 0;
+saveData = 1;
+doFECAnalysis = 1;
+smoothenStimuli = 0;
 plotFigures = 1;
 playVideo = 0;
 
 % Dataset details
 sessionType = 9;
 %mice = [2 3 5];
-mice = 3;
-nSessions = 12;
-nTrials = 60; % NOTE: During sorting, the dummy trial was excluded
+mice = 7;
+nSessions = 6;
+nTrials = 80; % NOTE: During sorting, the dummy trial was excluded
+
+% Video details
+nFrames = 250; %per trial; arbitrary
 
 startSession = nSessions; %single sessions
 %startSession = 5;
-startTrial = 1; % NOTE: During sorting, the dummy trial was excluded
+startTrial = 1;
 startFrame = 1;
 
 imageProcessDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/ImageProcess/';
-rawDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
+rawDirec = '/Users/ananth/Desktop/Work/Behaviour/DATA/';
 motionDirec = '/Users/ananth/Desktop/Work/Analysis/MotionAnalysis/';
 performanceDirec = '/Users/ananth/Desktop/Work/Analysis/PerformanceAnalysis/';
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
 
-fontSize = 20;
-lineWidth = 3;
+fontSize = 16;
+lineWidth = 2;
 markerWidth = 7;
-
-timeLine = zeros(150,1);
-csLine = timeLine;
-usLine = timeLine;
-
-csLine(50:55,1) = 1;
-if sessionType == 9
-    usLine(80:85) = 1;
-else
-    usLine(90:95) = 1;
-end
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
     
     for session = startSession:nSessions
-        dataset = ['Mouse' mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
+        dataset = [mouseName '_' num2str(sessionType) '_' num2str(session)];
         disp(['Working on ' dataset])
         
         if doFECAnalysis == 1
             disp('Performing FEC analysis ...')
             
             % Load image processing parameters
-            load([imageProcessDirec 'Mouse' mouseName '/' dataset '/imageProcess.mat'])
-            
-            % Video details
-            nFrames = floor(samplingRate*trialDuration); %per trial
-            time = 1:(1*1000/samplingRate):nFrames*1000/samplingRate; % in ms
+            load([imageProcessDirec mouseName '/' dataset '/imageProcess.mat'])
             
             % Preallocation
-            eyeClosure = zeros(nTrials,nFrames); %for every individual session
-            eyeClosure_baseline = zeros(nTrials,1);
-            fec = zeros(nTrials,nFrames);
+            eyeClosure = nan(nTrials,nFrames); %for every individual session
+            eyeClosure_baseline = nan(nTrials,1);
+            fec = nan(nTrials,nFrames);
+            probeTrials = zeros(nTrials,1);
+            timestamps = nan(nTrials,nFrames);
+            trialCount = nan(nTrials,nFrames);
+            puff = zeros(nTrials,nFrames);
+            tone = zeros(nTrials,nFrames);
+            led = zeros(nTrials,nFrames);
+            motion1 = zeros(nTrials,nFrames);
+            motion2 = zeros(nTrials,nFrames);
+            camera = zeros(nTrials,nFrames);
+            microscope = zeros(nTrials,nFrames);
             
             % Analyze every trial for FEC
             for trial = startTrial:nTrials
-                disp(['Trial ' num2str(trial)])
-                %1 - Load the reference image (first image in Trial 1)
-                raw = load([rawDirec 'Mouse' mouseName '/' dataset, ...
-                    '/' dataset '_Trial' num2str(trial)]);
+                disp(['Trial ' num2str(trial) '/' num2str(nTrials)])
+                
+                if trial <10
+                    file = [rawDirec mouseName '/' dataset, ...
+                        '/Trial_00' num2str(trial) '.tif'];
+                else
+                    file = [rawDirec mouseName '/' dataset, ...
+                        '/Trial_0' num2str(trial) '.tif'];
+                end
+                
                 for frame = startFrame:nFrames
-                    refImage = rgb2gray(raw.raw(:,:,:,frame));
+                    %1 - Load the reference image (first image in Trial 1)
+                    refImage = double(imread(file, frame));
                     
-                    % 2 - Adjust contrast
-                    refImage2 = imadjust(refImage,[low_in; high_in],[low_out; high_out]);
+                    %2 - Crop image - for eye (absolute coordinates)
+                    croppedImage = imcrop(refImage,crop);
                     
-                    %3 - Median filter
-                    refImage3 = medfilt2(refImage2,[m m]);
+                    %3 - Crop again - for FEC (relative coordinates)
+                    fecImage = imcrop(croppedImage,fecROI);
                     
-                    %4 - Crop image
-                    croppedImage = imcrop(refImage3,crop);
+                    %4 - Binarize
+                    %The "threshold" is established by "findTheEye.m"
+                    binImage = fecImage > threshold; %binarize
                     
-                    %5 - Binarize
-                    croppedImage2 = im2bw(croppedImage,level); %binarize
+                    binImage_vector = reshape(binImage,1,[]);
+                    eyeClosure(trial,frame) = (length(find(~binImage)))/length(binImage_vector);
                     
-                    eyeClosure(trial,frame) = (length(find(~croppedImage2(:,fecROI))))/length(reshape(croppedImage(:,fecROI),1,[]));
+                    % Read Datalines from each frame
+                    dataLine = char(refImage(1,:));
+                    %disp(dataLine)
+                    commai = strfind(dataLine,',');
+                    if isempty(commai)
+                        warning(['Frame ' num2str(frame) ' has no data line'])
+                        continue
+                    else
+                        %{
+                        DATALINE:
+                        1. msg_
+                        2. "%lu,%d,%d,%d,%d,%d,%d,%d,%d,%s"
+                        3. timestamp
+                        4. trial_count_
+                        5. puff
+                        6. tone
+                        7. led,
+                        8. motion1
+                        9. motion2
+                        10. camera
+                        11. microscope
+                        12. trial_state_
+                        %}
+                        timestamps(trial,frame) = str2double(sprintf(dataLine(commai(2)+1:commai(3)-1),'%s'));
+                        trialCount(trial,frame) = str2double(sprintf(dataLine(commai(3)+1:commai(4)-1),'%s'));
+                        if trialCount(trial,frame) ~= trial
+                            warning('trialCount ~= trial')
+                        end
+                        puff(trial,frame)= str2double(sprintf(dataLine(commai(4)+1:commai(5)-1),'%s'));
+                        %tone(trial,frame) = str2double(sprintf(dataLine(commai(5)+1:commai(6)-1),'%s'));
+                        led(trial,frame) = str2double(sprintf(dataLine(commai(6)+1:commai(7)-1),'%s'));
+                        %motion1(trial,frame) = str2double(sprintf(dataLine(commai(7)+1:commai(8)-1),'%s'));
+                        %motion2(trial,frame) = str2double(sprintf(dataLine(commai(8)+1:commai(9)-1),'%s'));
+                        %camera(trial,frame) = str2double(sprintf(dataLine(commai(9)+1:commai(10)-1),'%s'));
+                        %microscope(trial,frame) = str2double(sprintf(dataLine(commai(10)+1:commai(11)-1),'%s'));
+                        
+                    end
                     
                     if playVideo == 1
+                        if frame == startFrame
+                            disp('Playing Video ...');
+                        end
+                        pause(0.05)
                         figure(2)
-                        pause(0.1)
-                        subplot(1,2,1)
+                        subplot(1,3,1)
                         imagesc(croppedImage)
-                        colormap(hot)
+                        colormap(gray)
                         z = colorbar;
                         ylabel(z,'Intensity (A.U.)', ...
                             'FontSize', fontSize,...
                             'FontWeight', 'bold')
-                        title(['Cropped Image ' mouseName ...
+                        title(['Eye - ' mouseName ...
                             ' ST' num2str(sessionType) ' S' num2str(session) ...
-                            'Trial ' num2str(trial)], ...
+                            ' Trial ' num2str(trial) ...
+                            ' Frame ' num2str(frame)], ...
                             'FontSize', fontSize, ...
                             'FontWeight', 'bold')
                         
-                        subplot(1,2,2)
-                        imagesc(croppedImage2)
-                        colormap(hot)
+                        subplot(1,3,2)
+                        imagesc(fecImage)
+                        colormap(gray)
                         z = colorbar;
                         ylabel(z,'Intensity (A.U.)', ...
-                            'FontSize', fontSize,...
+                            'FontSize', fontSize, ...
                             'FontWeight', 'bold')
                         title(['Binarized Frame ' num2str(frame)], ...
                             'FontSize', fontSize, ...
                             'FontWeight', 'bold')
+                        
+                        subplot(1,3,3)
+                        imagesc(binImage)
+                        colormap(gray)
+                        z = colorbar;
+                        ylabel(z,'Intensity (A.U.)', ...
+                            'FontSize', fontSize, ...
+                            'FontWeight', 'bold')
+                        title(['fecROI Frame ' num2str(frame)], ...
+                            'FontSize', fontSize, ...
+                            'FontWeight', 'bold')
                     end
+                    %close(2)
                 end
+                
                 eyeClosure_baseline(trial) = max(eyeClosure(trial,:));
                 fec(trial,:) = 1 - (eyeClosure(trial,:)/eyeClosure_baseline(trial));
+                
+                % Probe Trials
+                puffi = find(puff(trial,:));
+                if isempty(puffi)
+                    probeTrials(trial,1) = 1;
+                    disp(['[INFO] Probe trial found: Trial ' num2str(trial)])
+                end
+                
+                if smoothenStimuli == 1
+                    %Smoothen (on account of missing data lines)
+                    %LED
+                    ledi = find(led(trial,:));
+                    if isempty(ledi)
+                        warning(['There is no CS played in trial ' num2str(trial)])
+                        continue
+                    else
+                        led(trial,ledi(1):ledi(end)) = 1;
+                    end
+                    
+                    %Puff
+                    puffi = find(puff(trial,:));
+                    if isempty(puffi)
+                        warning(['There is no US played in trial ' num2str(trial)])
+                        continue
+                    else
+                        puff(trial,puffi(1):puffi(end)) = 1;
+                    end
+                end
                 disp('... done')
             end
         else
-            load([saveDirec 'Mouse' mouseName '/' dataset '/fec.mat']);
-            load([motionDirec 'Mouse' mouseName '/' dataset '/motion.mat']);
-            load([performanceDirec 'Mouse' mouseName '/' dataset '/Session' num2str(session) '.mat']);
+            load([saveDirec mouseName '/' dataset '/fec.mat']);
+            %load([motionDirec mouseName '/' dataset '/motion.mat']);
+            %load([performanceDirec mouseName '/' dataset '/performance.mat']);
         end
         
         if plotFigures == 1
-            %                 figure(4)
-            %                 clf
-            %                 for trial = 1:nTrials
-            %                     hold on
-            %                     plot(time,((fec(trial,:)*3+(1*(trial-1)))),...
-            %                         'black', 'LineWidth', 2)
-            %                 end
-            %                 axis([0 max(time) 1 nTrials]);
-            %                 title(['FEC [0: Open; 1: Closed] - ' ...
-            %                     mouseName ' ST' num2str(sessionType) ' S' num2str(session)],...
-            %                     'FontSize', fontSize,...
-            %                     'FontWeight', 'bold')
-            %                 xlabel('Time/ms', ...
-            %                     'FontSize', fontSize,...
-            %                     'FontWeight', 'bold')
-            %                 set(gca,'xtick',[100 200 300 ...
-            %                     400 500 600 ...
-            %                     700 800 900 ...
-            %                     1000 1100 1200 ...
-            %                     1300 1400 1500])
-            %                 ylabel('Trials', ...
-            %                     'FontSize', fontSize,...
-            %                     'FontWeight', 'bold')
-            %                 ylim([0 nTrials+3])
-            %                 set(gca,'YTickLabel',[1 60])
-            %                 set(gca,'YTick',[1 60])
-            %                 set(gca,'FontSize', fontSize)
-            %
-            %                 print(['/Users/ananth/Desktop/figs/FEC/fec_' mouseName ...
-            %                     '_ST' num2str(sessionType) ...
-            %                     '_S' num2str(session)],...
-            %                     '-djpeg');
-            
-            figure(5)
+            % FEC plots
+            figure(4)
             clf
-            subplot(9,9,1:72)
             %subplot(6,9,1:45)
+            subplot(3,1,1)
             imagesc(fec)
             colormap(jet)
             if sessionType == 9
-                title([' FEC - 250 ms ISI - ' mouseName ' S' num2str(session)], ...
+                title([' FEC | 250 ms Trace | ' mouseName ' S' num2str(session)], ...
                     'FontSize', fontSize, ...
                     'FontWeight', 'bold')
             else
-                title([' FEC - 350 ms ISI - ' mouseName ' S' num2str(session)], ...
+                title([' FEC | 350 ms Trace | ' mouseName ' S' num2str(session)], ...
                     'FontSize', fontSize, ...
                     'FontWeight', 'bold')
             end
-            %             title('Weak Learner - 250 ms ISI - Session 12', ...
-            %                 'FontSize', fontSize,...
-            %                 'FontWeight', 'bold')
-            %                 xlabel('Time/ms', ...
-            %                     'FontSize', fontSize,...
-            %                     'FontWeight', 'bold')
+            
             set(gca,'XTick', [])
             set(gca,'XTickLabel', [])
             ylabel('Trials', ...
                 'FontSize', fontSize,...
                 'FontWeight', 'bold')
             z = colorbar;
-            ylabel(z,'FEC [0: Open; 1: Closed]',...
-                'FontSize', fontSize,...
-                'FontWeight', 'bold')
+            set(z,'YTick',[0, 1])
+            set(z,'YTickLabel',({'Open', 'Closed'}))
             set(gca,'FontSize', fontSize-2)
             
-            subplot(9,9,73:80)
-            %subplot(6,9,46:53)
-            plot(csLine,'-','LineWidth',lineWidth)
-            hold on
-            plot(usLine,'-','LineWidth',lineWidth)
-            set(gca)
-            legend('CS','US')
-            set(gca,'FontSize', fontSize-2)
-            set(gca,'YTick',[0 1])
-            set(gca, 'YTickLabel', {'Off' 'On'})
-            xlabel('Time/ms', ...
-                'FontSize', fontSize,...
+            % Stimuli
+            subplot(3,1,2)
+            stimuli = led+(2*puff);
+            imagesc(stimuli)
+            colormap(jet)
+            title('Stimuli', ...
+                'FontSize', fontSize, ...
                 'FontWeight', 'bold')
-            set(gca,'XTick', [10 30 50 ...
-                70 90 110 ...
-                130 150])
-            set(gca,'XTickLabel', [100 300 500 ...
-                700 900 1100 ...
-                1300 1500])
-            if sessionType == 9
-                if mice(mouse) == 5
-                    print('/Users/ananth/Desktop/figs/fec_weakLearner', ...
-                        '-dpng');
-                elseif mice(mouse) == 3
-                    print('/Users/ananth/Desktop/figs/fec_nonLearner', ...
-                        '-dpng');
-                elseif mice(mouse) == 2
-                    print('/Users/ananth/Desktop/figs/fec_strongLearner', ...
-                        '-dpng');
-                end
-            else
-                print('/Users/ananth/Desktop/figs/fec_350', ...
-                    '-dpng');
-            end
-            
-            %             print(['/Users/ananth/Desktop/figs/FEC/fec_heatmap_' ...
-            %                 mouseName '_ST' num2str(sessionType) '_S' num2str(session)],...
-            %                 '-djpeg');
-            
-            hitList = zeros(nTrials,1);
-            hitList(hitTrials) = 1;
-            
-            probeList = zeros(nTrials,1);
-            probeList(probeTrials) = 1;
-            
-            figure(6);
-            clf
-            subplot(9,2,1:2:15)
-            imagesc(hitList)
-            title(['Hits - ' mouseName ' S' num2str(session)], ...
-                'FontSize', fontSize,...
-                'FontWeight','bold')
+            set(gca,'XTick', [])
+            set(gca,'XTickLabel', [])
             ylabel('Trials', ...
                 'FontSize', fontSize,...
-                'FontWeight','bold')
-            set(gca,'FontSize', fontSize-2)
-            set(gca,'XTick',[])
-            set(gca,'XTickLabel',[])
-            set(gca,'YTick',[10 20 30 40 50 60])
-            set(gca, 'YTickLabel', [10 20 30 40 50 60])
+                'FontWeight', 'bold')
             z = colorbar;
-            set(z,'YTick', [0 1],...
-                'FontSize', fontSize)
+            set(z,'YTick',[0, 1, 2])
+            set(z,'YTickLabel',({'Off'; 'LED'; 'Puff'}))
+            set(gca,'FontSize', fontSize-2)
             
-            subplot(9,2,2:2:16)
-            imagesc(probeList)
-            title(['Probes - ' mouseName ' S' num2str(session)], ...
+            
+            % Probe Trials
+            subplot(3,1,3)
+            imagesc(probeTrials)
+            colormap(jet)
+            title('Probe Trials', ...
+                'FontSize', fontSize, ...
+                'FontWeight', 'bold')
+            set(gca,'XTick', [])
+            set(gca,'XTickLabel', [])
+            ylabel('Trials', ...
                 'FontSize', fontSize,...
-                'FontWeight','bold')
-            colormap(gray)
-            set(gca,'FontSize', fontSize-2)
-            set(gca,'XTick',[])
-            set(gca,'XTickLabel',[])
-            set(gca,'YTick',[10 20 30 40 50 60])
-            set(gca, 'YTickLabel', [10 20 30 40 50 60])
+                'FontWeight', 'bold')
             z = colorbar;
-            set(z,'YTick', [0 1],...
-                'FontSize', fontSize)
-            if sessionType == 9
-                if mice(mouse) == 5
-                    print('/Users/ananth/Desktop/figs/extraFec_weakLeraner', ...
-                        '-dpng');
-                elseif mice(mouse) == 3
-                    print('/Users/ananth/Desktop/figs/extraFec_nonLeraner', ...
-                        '-dpng');
-                elseif mice(mouse) == 2
-                    print('/Users/ananth/Desktop/figs/extraFec_strongLeraner', ...
-                        '-dpng');
-                end
-            else
-                print('/Users/ananth/Desktop/figs/extraFec_350', ...
-                    '-dpng');
-            end
+            set(z,'YTick',[0, 1])
+            set(z,'YTickLabel',({'No'; 'Yes'}))
+            set(gca,'FontSize', fontSize-2)
+            
+            %             %Stimulus lines
+            %             csLine = sum(led,1)>1;
+            %             usLine = sum(puff,1)>1;
+            %
+            %             %subplot(6,9,46:53)
+            %             plot(csLine,'b-','LineWidth',lineWidth)
+            %             hold on
+            %             plot(usLine,'r-','LineWidth',lineWidth)
+            %             set(gca)
+            %             legend('CS','US')
+            %             set(gca,'FontSize', fontSize-2)
+            %             set(gca,'YTick',[0 1])
+            %             set(gca, 'YTickLabel', {'Off' 'On'})
+            %             xlabel('Frames', ...
+            %                 'FontSize', fontSize,...
+            %                 'FontWeight', 'bold')
+            %             set(gca,'XTick', [10 30 50 ...
+            %                 70 90 110 ...
+            %                 130 150])
+            %             set(gca,'XTickLabel', [100 300 500 ...
+            %                 700 900 1100 ...
+            %                 1300 1500])
+            
+            print(['/Users/ananth/Desktop/figs/FEC/fec_' ...
+                mouseName '_' num2str(sessionType) '_' num2str(session)],...
+                '-djpeg');
             
         end
         
         if saveData == 1
-            saveFolder = [saveDirec 'Mouse' mouseName '/' dataset '/'];
+            saveFolder = [saveDirec mouseName '/' dataset '/'];
             if ~isdir(saveFolder)
                 mkdir(saveFolder);
             end
@@ -302,9 +320,8 @@ for mouse = 1:length(mice)
             % Save FEC curve
             save([saveFolder 'fec.mat' ], ...
                 'eyeClosure', 'fec', ...
-                'low_in', 'high_in', 'low_out', 'high_out',...
-                'crop', 'fecROI', 'm', 'level',...
-                'samplingRate','trialDuration')
+                'led', 'puff', 'probeTrials',...
+                'crop', 'fecROI')
         end
         disp([dataset ' analyzed'])
     end

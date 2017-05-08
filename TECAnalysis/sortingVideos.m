@@ -1,6 +1,7 @@
 % AUTHOR - Kambadur Ananthamurthy
 % PURPOSE - To segment eye-blink behaviour videos into appropriate trials
 % and save as .mat files (MATLAB-friendly)
+% STATUS - Obsolete. The .tif files are directly read by "findTheEye.m", now.
 
 tic
 close all
@@ -17,10 +18,10 @@ playVideos = 0;
 singleVideo = 0; %Does the session have only one video (1) or several (0)?
 
 %Dataset details
-mice = [2 5];
-sessionType = 11;
-nSessions = 3;
-nTrials = 61;
+mice = [7 8 9 10];
+sessionType = 9;
+nSessions = 1;
+nTrials = 80;
 
 %Video details
 height = 300;

@@ -4,6 +4,9 @@
 %                2) Find the image processing parameters using findTheEye.m
 %                3) Perform FEC analysis
 
+
+%%%%%%% to be edited!!! %%%%%%% - make sure saved file names are consistent
+
 tic
 clear all
 %close all
@@ -134,7 +137,7 @@ for mouse = 1:length(mice)
         end
         if saveData == 1
             % session info
-            save([saveFolder 'Session' num2str(session) '.mat'], ...
+            save([saveFolder 'performance' num2str(session) '.mat'], ...
                 'sessionScore', ...
                 'alpha', 'hitTrials', ...
                 'fanoFactor', 'trialRejectThreshold', 'rejectedTrials')

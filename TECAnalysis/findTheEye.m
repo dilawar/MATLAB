@@ -1,5 +1,6 @@
 % PURPOSE - To establish the best parameters to find the eye
-% DEPENDENCIES - First sort all trials as .mat files using sortingVideos.m
+% DEPENDENCIES - None.
+% NOTE - sortingVideos.m is now obsolete
 
 %clear all
 %close all
@@ -13,73 +14,91 @@ playVideo = 0;
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-mice = 4;
-nSessions = 7;
+mice = 8;
+nSessions = 6;
 
-%Cropping parameters
-xmin = 132;
-ymin = 56;
-width = 39;
-height = 29;
-crop = [xmin ymin width height]; %[xmin ymin width height]
-fecROI = 24:30;
+%Crop parameters
+xmin1 = 200;
+ymin1 = 120;
+width1 = 200;
+height1 = 120;
+crop = [xmin1 ymin1 width1 height1]; %[xmin ymin width height] of refImage
+
+%FEC parameters
+xmin2 = 118;
+ymin2 = 20;
+width2 = 30;
+height2 = 80;
+fecROI = [xmin2 ymin2 width2 height2]; %[xmin ymin width height] of croppedImage
 
 %Filters
-m = 4; %for median filter
-level = 0.03; %for binarization
+%m = 2; %for median filter
+level = 0.01; %for binarization
 
-%Contrast adjustment parameters
-low_in = 0;
-high_in = 0.1;
-low_out = 0;
-high_out = 1;
+% %Contrast adjustment parameters
+% low_in = 0;
+% high_in = 1;
+% low_out = 0;
+% high_out = 1;
 
 nTrials = 1;
 startSession = nSessions;
 startTrial = 1;
-startFrame = 40;
+startFrame = 1;
 
 %Video details
 samplingRate = 100; % in Frames Per Second (FPS)
 trialDuration = 1.5; % in seconds
 %nFrames = floor(samplingRate*trialDuration); %per trial
-nFrames = 110;
+nFrames = 250;
 
 saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/ImageProcess/';
-rawDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
+%rawDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/Videos/';
+rawDirec = '/Users/ananth/Desktop/Work/Behaviour/DATA/';
 
-fontSize = 20;
+fontSize = 16;
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
     
     for session = startSession:nSessions
-        dataset = ['Mouse' mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
+        %         dataset = ['Mouse' mouseName '_SessionType' num2str(sessionType) '_Session' num2str(session)];
+        dataset = [mouseName '_' num2str(sessionType) '_' num2str(session)];
         disp(['Working on ' dataset])
         
         if playVideo == 1
             disp('Playing Video ...');
             for trial = startTrial:nTrials
-                %1 - Load the reference image (first image in Trial 1)
-                raw = load([rawDirec 'Mouse' mouseName '/' dataset, ...
-                    '/' dataset '_Trial' num2str(trial)]);
+                
+                if trial <10
+                    file = [rawDirec mouseName '/' dataset, ...
+                        '/Trial_00' num2str(trial) '.tif'];
+                else
+                    file = [rawDirec mouseName '/' dataset, ...
+                        '/Trial_0' num2str(trial) '.tif'];
+                end
+                
                 for frame = startFrame:nFrames
-                    refImage = rgb2gray(raw.raw(:,:,:,frame));
+                    %1 - Load the reference image (first image in Trial 1)
+                    refImage = double(imread(file, frame));
                     
-                    %2 - Adjust contrast
-                    refImage2 = imadjust(refImage,[low_in; high_in],[low_out; high_out]);
+                    %2 - Crop image - for eye (absolute coordinates)
+                    croppedImage = imcrop(refImage,crop);
                     
-                    %3 - Median filter
-                    refImage3 = medfilt2(refImage2,[m m]);
+                    %3 - Crop again - for FEC (relative coordinates)
+                    fecImage = imcrop(croppedImage,fecROI);
                     
-                    %4 - Crop image
-                    croppedImage = imcrop(refImage3,crop);
+                    %4 - Binarize
+                    if frame == startFrame
+                        threshold = prctile(reshape(fecImage,[((height2+1)*(width2+1)),1]),50);
+                    end
+                    binImage = fecImage > threshold; %binarize
                     
                     pause(0.1)
                     figure(2)
                     subplot(1,3,1)
                     imagesc(croppedImage)
-                    colormap(hot)
+                    colormap(gray)
                     z = colorbar;
                     ylabel(z,'Intensity (A.U.)', ...
                         'FontSize', fontSize,...
@@ -91,11 +110,9 @@ for mouse = 1:length(mice)
                         'FontSize', fontSize, ...
                         'FontWeight', 'bold')
                     
-                    %5 - Binarize
-                    croppedImage2 = im2bw(croppedImage,level);
                     subplot(1,3,2)
-                    imagesc(croppedImage2)
-                    colormap(hot)
+                    imagesc(fecImage)
+                    colormap(gray)
                     z = colorbar;
                     ylabel(z,'Intensity (A.U.)', ...
                         'FontSize', fontSize, ...
@@ -105,8 +122,8 @@ for mouse = 1:length(mice)
                         'FontWeight', 'bold')
                     
                     subplot(1,3,3)
-                    imagesc(croppedImage2(:,fecROI))
-                    colormap(hot)
+                    imagesc(binImage)
+                    colormap(gray)
                     z = colorbar;
                     ylabel(z,'Intensity (A.U.)', ...
                         'FontSize', fontSize, ...
@@ -118,24 +135,23 @@ for mouse = 1:length(mice)
             end
         else
             %1 - Load the reference image (first image in Trial 1)
-            raw = load([rawDirec 'Mouse' mouseName '/' dataset '/' dataset '_Trial1']);
-            refImage = rgb2gray(raw.raw(:,:,:,1));
+            file = [rawDirec mouseName '/' dataset '/trial_001.tif'];
+            refImage = double(imread(file, 1));
             
-            %2 - Adjust contrast
-            refImage2 = imadjust(refImage,[low_in; high_in],[low_out; high_out]);
+            %2 - Crop image - for eye (absolute coordinates)
+            croppedImage = imcrop(refImage,crop);
             
-            %3 - Median filter
-            refImage3 = medfilt2(refImage2,[m m]);
+            %3 - Crop again - for FEC (relative coordinates)
+            fecImage = imcrop(croppedImage,fecROI);
             
-            %4 - Crop image
-            croppedImage = imcrop(refImage3,crop);
-            croppedImage_original = imcrop(refImage2,crop);
-            
-            %5 - Binarize
-            croppedImage2 = im2bw(croppedImage,level); %binarize
+            %4 - Binarize
+            %threshold = prctile(reshape(fecImage,[((height2+1)*(width2+1)),1]),50);
+            fecImage_vector = reshape(fecImage,1,[]);
+            threshold = prctile(fecImage_vector,50);
+            binImage = fecImage > threshold; %binarize
             
             figure(1)
-            subplot(1,3,1)
+            subplot(2,2,1)
             imagesc(refImage)
             z = colorbar;
             ylabel(z,'Intensity (A.U.)', ...
@@ -146,79 +162,51 @@ for mouse = 1:length(mice)
                 'FontWeight', 'bold')
             set(gca,'FontSize',fontSize)
             
-            subplot(1,3,2)
-            imagesc(refImage2)
+            subplot(2,2,2)
+            imagesc(croppedImage)
             z = colorbar;
             ylabel(z,'Intensity (A.U.)', ...
                 'FontSize', fontSize,...
                 'FontWeight', 'bold')
-            title('2. Contrast Adjusted', ...
+            title('2. Cropped', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
             set(gca,'FontSize',fontSize)
             
-            subplot(1,3,3)
-            imagesc(refImage3)
-            colormap(hot)
+            subplot(2,2,3)
+            imagesc(fecImage)
+            colormap(gray)
             z = colorbar;
             ylabel(z,'Intensity (A.U.)', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
-            title(['3. Median Filtered [' ...
-                num2str(m) 'x' num2str(m) ']' ], ...
+            title('3. FEC ROI', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
             set(gca,'FontSize',fontSize)
             
-            figure(3)
-            subplot(1,3,1)
-            imagesc(croppedImage_original);
-            colormap(hot)
+            subplot(2,2,4)
+            imagesc(binImage);
+            colormap(gray)
             z = colorbar;
             ylabel(z,'Intensity (A.U.)', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
-            title('Cropped - Original', ...
+            title('4. Binarized', ...
                 'FontSize', fontSize, ...
                 'FontWeight', 'bold')
             set(gca,'FontSize',fontSize)
             
-            subplot(1,3,2)
-            imagesc(croppedImage);
-            colormap(hot)
-            z = colorbar;
-            ylabel(z,'Intensity (A.U.)', ...
-                'FontSize', fontSize, ...
-                'FontWeight', 'bold')
-            title(['4. Cropped - Median Filtered [' ...
-                num2str(m) 'x' num2str(m) ']' ],...
-                'FontSize', fontSize, ...
-                'FontWeight', 'bold')
-            set(gca,'FontSize',fontSize)
-            
-            subplot(1,3,3)
-            imagesc(croppedImage2)
-            colormap(hot)
-            z = colorbar;
-            ylabel(z,'Intensity (A.U.)', ...
-                'FontSize', fontSize, ...
-                'FontWeight', 'bold')
-            title('5. Binarized', ...
-                'FontSize', fontSize, ...
-                'FontWeight', 'bold')
-            set(gca,'FontSize',fontSize)
         end
+        
         if saveData == 1
-            saveFolder = [saveDirec 'Mouse' mouseName '/' dataset '/'];
+            saveFolder = [saveDirec mouseName '/' dataset '/'];
             if ~isdir(saveFolder)
                 mkdir(saveFolder);
             end
-            
             %Save FEC curve
             save([saveFolder 'imageProcess.mat' ], ...
-                'low_in', 'high_in', 'low_out', 'high_out',...
-                'crop', 'fecROI', 'm', 'level',...
-                'samplingRate','trialDuration')
+                'crop', 'fecROI', 'threshold')
         end
     end
 end
