@@ -14,26 +14,26 @@ playVideo = 0;
 %Dataset details
 sessionType = 9;
 %mice = [1 2 3 4 5];
-mice = 8;
-nSessions = 6;
+mice = 10;
+nSessions = 7;
 
 %Crop parameters
-xmin1 = 200;
-ymin1 = 120;
+xmin1 = 215;
+ymin1 = 140;
 width1 = 200;
 height1 = 120;
 crop = [xmin1 ymin1 width1 height1]; %[xmin ymin width height] of refImage
 
 %FEC parameters
 xmin2 = 118;
-ymin2 = 20;
-width2 = 30;
-height2 = 80;
+ymin2 = 5;
+width2 = 30; % Don't change
+height2 = 120;% Don't change
 fecROI = [xmin2 ymin2 width2 height2]; %[xmin ymin width height] of croppedImage
 
 %Filters
 %m = 2; %for median filter
-level = 0.01; %for binarization
+%level = 0.01; %for binarization
 
 % %Contrast adjustment parameters
 % low_in = 0;
@@ -72,10 +72,10 @@ for mouse = 1:length(mice)
                 
                 if trial <10
                     file = [rawDirec mouseName '/' dataset, ...
-                        '/Trial_00' num2str(trial) '.tif'];
+                        '/trial_00' num2str(trial) '.tif'];
                 else
                     file = [rawDirec mouseName '/' dataset, ...
-                        '/Trial_0' num2str(trial) '.tif'];
+                        '/trial_0' num2str(trial) '.tif'];
                 end
                 
                 for frame = startFrame:nFrames

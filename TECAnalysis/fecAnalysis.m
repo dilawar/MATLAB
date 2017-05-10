@@ -17,8 +17,8 @@ playVideo = 0;
 
 % Dataset details
 sessionType = 9;
-%mice = [2 3 5];
-mice = 7;
+mice = [8 9];
+%mice = 10;
 nSessions = 6;
 nTrials = 80; % NOTE: During sorting, the dummy trial was excluded
 
@@ -39,6 +39,7 @@ saveDirec = '/Users/ananth/Desktop/Work/Analysis/VideoAnalysis/FEC/';
 fontSize = 16;
 lineWidth = 2;
 markerWidth = 7;
+transparency = 0.5;
 
 for mouse = 1:length(mice)
     mouseName = ['M' num2str(mice(mouse))];
@@ -74,15 +75,20 @@ for mouse = 1:length(mice)
                 
                 if trial <10
                     file = [rawDirec mouseName '/' dataset, ...
-                        '/Trial_00' num2str(trial) '.tif'];
+                        '/trial_00' num2str(trial) '.tif'];
                 else
                     file = [rawDirec mouseName '/' dataset, ...
-                        '/Trial_0' num2str(trial) '.tif'];
+                        '/trial_0' num2str(trial) '.tif'];
                 end
                 
                 for frame = startFrame:nFrames
                     %1 - Load the reference image (first image in Trial 1)
-                    refImage = double(imread(file, frame));
+                    try
+                        refImage = double(imread(file, frame));
+                    catch
+                        warning(['Unable to find ' file])
+                        continue
+                    end
                     
                     %2 - Crop image - for eye (absolute coordinates)
                     croppedImage = imcrop(refImage,crop);
@@ -101,8 +107,9 @@ for mouse = 1:length(mice)
                     dataLine = char(refImage(1,:));
                     %disp(dataLine)
                     commai = strfind(dataLine,',');
+                    
                     if isempty(commai)
-                        warning(['Frame ' num2str(frame) ' has no data line'])
+                        %warning(['Frame ' num2str(frame) ' has no data line'])
                         continue
                     else
                         %{
@@ -132,7 +139,6 @@ for mouse = 1:length(mice)
                         %motion2(trial,frame) = str2double(sprintf(dataLine(commai(8)+1:commai(9)-1),'%s'));
                         %camera(trial,frame) = str2double(sprintf(dataLine(commai(9)+1:commai(10)-1),'%s'));
                         %microscope(trial,frame) = str2double(sprintf(dataLine(commai(10)+1:commai(11)-1),'%s'));
-                        
                     end
                     
                     if playVideo == 1
@@ -223,11 +229,11 @@ for mouse = 1:length(mice)
             figure(4)
             clf
             %subplot(6,9,1:45)
-            subplot(3,1,1)
+            subplot(2,2,1)
             imagesc(fec)
             colormap(jet)
             if sessionType == 9
-                title([' FEC | 250 ms Trace | ' mouseName ' S' num2str(session)], ...
+                title([mouseName ' S' num2str(session) ' | 250 ms Trace | FEC '], ...
                     'FontSize', fontSize, ...
                     'FontWeight', 'bold')
             else
@@ -247,7 +253,7 @@ for mouse = 1:length(mice)
             set(gca,'FontSize', fontSize-2)
             
             % Stimuli
-            subplot(3,1,2)
+            subplot(2,2,3)
             stimuli = led+(2*puff);
             imagesc(stimuli)
             colormap(jet)
@@ -266,7 +272,7 @@ for mouse = 1:length(mice)
             
             
             % Probe Trials
-            subplot(3,1,3)
+            subplot(2,2,2)
             imagesc(probeTrials)
             colormap(jet)
             title('Probe Trials', ...
@@ -282,28 +288,34 @@ for mouse = 1:length(mice)
             set(z,'YTickLabel',({'No'; 'Yes'}))
             set(gca,'FontSize', fontSize-2)
             
-            %             %Stimulus lines
-            %             csLine = sum(led,1)>1;
-            %             usLine = sum(puff,1)>1;
-            %
-            %             %subplot(6,9,46:53)
-            %             plot(csLine,'b-','LineWidth',lineWidth)
-            %             hold on
-            %             plot(usLine,'r-','LineWidth',lineWidth)
-            %             set(gca)
-            %             legend('CS','US')
-            %             set(gca,'FontSize', fontSize-2)
-            %             set(gca,'YTick',[0 1])
-            %             set(gca, 'YTickLabel', {'Off' 'On'})
-            %             xlabel('Frames', ...
-            %                 'FontSize', fontSize,...
-            %                 'FontWeight', 'bold')
-            %             set(gca,'XTick', [10 30 50 ...
-            %                 70 90 110 ...
-            %                 130 150])
-            %             set(gca,'XTickLabel', [100 300 500 ...
-            %                 700 900 1100 ...
-            %                 1300 1500])
+            % Shaded error bars
+            notProbes = find(~probeTrials);
+            meanFEC = mean(fec(notProbes,:),1);
+            meanFEC_stddev = std(fec(notProbes,:),1);
+            probes = find(probeTrials);
+            meanFEC_probe = mean(fec(probes,:),1);
+            meanFEC_probe_stddev = std(fec(probes,:),1);
+            
+            subplot(2,2,4)
+            lineProps1.col{1} = 'red';
+            lineProps2.col{1} = 'green';
+            mseb([],meanFEC, meanFEC_stddev,...
+                lineProps1, transparency);
+            hold on
+            mseb([],meanFEC_probe, meanFEC_probe_stddev,...
+                lineProps2, transparency);
+            ylabel('FEC', ...
+                'FontSize', fontSize, ...
+                'FontWeight', 'bold')
+            title('CS+US vs Probe Trials', ...
+                'FontSize', fontSize, ...
+                'FontWeight', 'bold')
+            set(gca,'XTick', [])
+            set(gca,'XTickLabel', [])
+            set(gca,'YTick',[0, 1])
+            set(gca,'YTickLabel',({0; 1}))
+            set(gca,'FontSize', fontSize-2)
+            legend('mean Paired +/- stddev', 'mean Probe +/- stddev','Location', 'northwest')
             
             print(['/Users/ananth/Desktop/figs/FEC/fec_' ...
                 mouseName '_' num2str(sessionType) '_' num2str(session)],...
